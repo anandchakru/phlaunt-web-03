@@ -22,6 +22,9 @@ const ProtectedRoute = ({ redirectTo, ...props }) => {
         dispatch(signOutAsync({}))
         navigate('/home')
       }}>Signout</Button>}
+      <Button onClick={() => {
+        navigate('/home')
+      }}>Home</Button>
       <Outlet />
     </>
   } else {
