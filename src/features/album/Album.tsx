@@ -5,7 +5,7 @@ function Album() {
   const { albumId } = useParams()
   useEffect(() => {
     if (albumId) {
-      console.log(`Album ${albumId}`)
+      console.log(`Album component loaded with albumid:${albumId}`)
     }
   }, [albumId])
   return (

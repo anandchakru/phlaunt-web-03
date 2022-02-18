@@ -1,6 +1,10 @@
 # phlaunt-web-03
 
+Github oauth app https://github.com/settings/applications/1834374
 
+Firebase authencation https://console.firebase.google.com/u/anandchakru@gmail.com/project/phlaunt-001/authentication/providers
+
+Authentication with Firebase and Github is done.
 ## initialize
 ```sh
 APPNAME=phlaunt-web-03
