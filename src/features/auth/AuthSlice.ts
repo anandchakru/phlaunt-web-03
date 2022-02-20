@@ -46,7 +46,8 @@ export const provider = new GithubAuthProvider()
 // https://docs.github.com/en/developers/apps/building-oauth-apps/scopes-for-oauth-apps#available-scopes
 provider.addScope('read:user,user:email,user:follow')
 
-export const authInitAsync = createAsyncThunk('auth/init', async (args: any, { getState }) => new Promise<{}>((resolve) => setTimeout(() => resolve({}), 1000)))
+export const authInitAsync = createAsyncThunk('auth/init', async (args: any, { getState }) => new Promise<{}>((resolve) => setTimeout(() => resolve({}), 200)))
+export const signOutAsync = createAsyncThunk('auth/signOut', async (args: any, { getState }) => signOut(fireauth))
 
 export const signInAsync = createAsyncThunk(
   'auth/signInWithPopup',
@@ -71,9 +72,6 @@ export const signInAsync = createAsyncThunk(
   }
 )
 
-export const signOutAsync = createAsyncThunk('auth/signOut', async (args: any, { getState }) => {
-  return signOut(fireauth)
-})
 
 export const authSlice = createSlice({
   name: 'auth',

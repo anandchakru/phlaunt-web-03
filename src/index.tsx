@@ -6,11 +6,14 @@ import { Provider } from 'react-redux'
 import * as serviceWorker from './serviceWorker'
 
 import App from './App'
+import { Box } from '@mui/material'
 
 ReactDOM.render(
   <React.StrictMode>
     <Provider store={store}>
-      <App />
+      <Box sx={{ flexGrow: 1 }}>
+        <App />
+      </Box>
     </Provider>
   </React.StrictMode>,
   document.getElementById('root')

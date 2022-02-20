@@ -7,7 +7,8 @@ function Home() {
   return (
     <div>
       <Button onClick={() => { navigate('/gallery') }}>Gallery</Button>
-      <Button onClick={() => { navigate('/album/33') }}>Album 33</Button>
+      <Button onClick={() => { navigate('/album/new') }}>New Album</Button>
+      <Button onClick={() => { navigate(`/album/${Math.random().toString(36).slice(2)}`) }}>Album</Button>
     </div>
   )
 }

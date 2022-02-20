@@ -16,6 +16,7 @@ import { useAppDispatch, useAppSelector } from './app/hooks'
 import { authInitAsync, authStateChange, fireauth, selectAuthInitStatus } from './features/auth/AuthSlice'
 import { onAuthStateChanged } from "firebase/auth"
 import { Backdrop, CircularProgress } from '@mui/material'
+import NewAlbum from './features/album/NewAlbum'
 
 
 function App() {
@@ -51,6 +52,7 @@ function App() {
           <Route element={<ProtectedRoute redirectTo="/login" />}> {/* https://stackoverflow.com/a/69592617 */}
             <Route path="/gallery" element={<Gallery />} />
             <Route path="/album" element={<Navigate to="/gallery" />} />
+            <Route path="/album/new" element={<NewAlbum />} />
             <Route path="/album/:albumId" element={<Album />} />
           </Route>
           <Route path="*" element={<h1>404</h1>} />

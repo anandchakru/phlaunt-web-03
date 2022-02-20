@@ -29,5 +29,5 @@ npm i react-router-dom
 # Authentication
 npm i firebase reactfire react-error-boundary react-google-button
 # Utils
-npm i date-fns uuid
-```
+npm i date-fns uuid axios
+```npm start
