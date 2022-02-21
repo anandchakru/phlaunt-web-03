@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react'
+import React, { useState } from 'react'
 import { Backdrop, Box, Button, Card, CardActionArea, CardContent, CardMedia, CircularProgress, Grid, Typography } from '@mui/material'
 import { useAppDispatch, useAppSelector } from '../../app/hooks'
 import { AppImageBlob, createAlbumAsync, selectAlbum } from './AlbumSlice'

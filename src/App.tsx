@@ -58,7 +58,7 @@ function App() {
         dispatch(setAuthCredentials(JSON.parse(tmp)))
       }
     }
-  }, [authCredential])
+  }, [authCredential, dispatch])
   return (
     <Container sx={{ textAlign: 'center' }}>
       <BrowserRouter basename='/phlaunt-web-03'>

@@ -1,6 +1,6 @@
 import React from 'react'
 import { useAppSelector, useAppDispatch } from '../../app/hooks'
-import { selectAuthCredential, selectIsAuth, selectAuthUser, signOutAsync } from './AuthSlice'
+import { selectIsAuth, selectAuthUser, signOutAsync } from './AuthSlice'
 import {
   Navigate,
   useLocation,
@@ -13,7 +13,7 @@ import { Button } from '@mui/material'
 const ProtectedRoute = ({ redirectTo, ...props }) => {
   const navigate = useNavigate()
   const isAuth = useAppSelector(selectIsAuth)
-  const credential = useAppSelector(selectAuthCredential)
+  // const credential = useAppSelector(selectAuthCredential)
   const user = useAppSelector(selectAuthUser)
   const dispatch = useAppDispatch()
   let location = useLocation()
