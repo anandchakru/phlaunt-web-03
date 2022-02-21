@@ -9,7 +9,7 @@ function Album() {
   useEffect(() => {
     if (albumId) {
       console.log(`Album component loaded with albumid:${albumId}`)
-      axios.get(`https://anandchakru.github.io/${albumId}`).then(res => res.data).then(data => {
+      axios.get(`https://anandchakru.github.io/${albumId}/`).then(res => res.data).then(data => {
         setPage(data)
       })
     }
@@ -19,7 +19,7 @@ function Album() {
       Album
       <pre>{albumId}</pre>
       {/* <iframe src={'https://anandchakru.github.io/' + albumId} seamless></iframe> */}
-      <Box>{page}</Box>
+      <Box dangerouslySetInnerHTML={{ __html: page }}></Box>
     </div>
   )
 }
