@@ -13,15 +13,16 @@ import ProtectedRoute from './features/auth/ProtectedRoute'
 import Login from './features/auth/Login'
 import './App.scss'
 import { useAppDispatch, useAppSelector } from './app/hooks'
-import { authInitAsync, authStateChange, fireauth, selectAuthInitStatus } from './features/auth/AuthSlice'
+import { authInitAsync, authStateChange, setAuthCredentials, fireauth, selectAuthCredential, selectAuthInitStatus } from './features/auth/AuthSlice'
 import { onAuthStateChanged } from "firebase/auth"
 import { Backdrop, CircularProgress } from '@mui/material'
 import NewAlbum from './features/album/NewAlbum'
 
 
 function App() {
+  const AUTH_CREDENTIAL = 'LS_AUTH_CREDENTIAL'
   const authInitStatus = useAppSelector(selectAuthInitStatus)
-
+  const authCredential = useAppSelector(selectAuthCredential)
   const dispatch = useAppDispatch()
   useEffect(() => {
     onAuthStateChanged(fireauth, (usr) => {
@@ -36,12 +37,28 @@ function App() {
             emailVerified: usr.emailVerified,
           }
         }))
+
       }
     })
   }, [dispatch])
+
   useEffect(() => {
     dispatch(authInitAsync({}))
   }, [dispatch])
+
+  useEffect(() => {
+    if (authCredential) {
+      const tmp = localStorage.getItem(AUTH_CREDENTIAL)
+      if (!tmp) {
+        localStorage.setItem(AUTH_CREDENTIAL, JSON.stringify(authCredential))
+      }
+    } else {
+      const tmp = localStorage.getItem(AUTH_CREDENTIAL)
+      if (tmp) {
+        dispatch(setAuthCredentials(JSON.parse(tmp)))
+      }
+    }
+  }, [authCredential])
   return (
     <Container sx={{ textAlign: 'center' }}>
       <BrowserRouter basename='/phlaunt-web-03'>

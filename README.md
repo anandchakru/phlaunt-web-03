@@ -29,5 +29,5 @@ npm i react-router-dom
 # Authentication
 npm i firebase reactfire react-error-boundary react-google-button
 # Utils
-npm i date-fns uuid axios
+npm i date-fns uuid axios @octokit/core octokit-plugin-create-pull-request 
 ```npm start

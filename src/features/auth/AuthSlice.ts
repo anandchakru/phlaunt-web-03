@@ -6,6 +6,7 @@ import { RootState } from '../../app/store'
 import { getAuth, signInWithPopup, GithubAuthProvider } from "firebase/auth"
 import { initializeApp } from 'firebase/app'
 import { getAnalytics } from 'firebase/analytics'
+import { Octokit } from "@octokit/core"
 
 export interface AppUser {
   uid: string
@@ -15,12 +16,20 @@ export interface AppUser {
   providerId: string
   emailVerified: boolean
 }
+export interface AppCredential {
+  idToken?: string;
+  accessToken?: string;
+  providerId: string;
+  secret?: string;
+  signinMethod: string;
+}
 export interface AuthState {
   isAuthenticated: boolean
   status: 'idle' | 'loading' | 'failed'
   initStatus: 'idle' | 'loading' | 'failed'
   user?: AppUser,
-  // credential?: OAuthCredential | null
+  credential?: AppCredential
+  octokit?: Octokit
 }
 
 const initialState: AuthState = {
@@ -44,7 +53,7 @@ export const fireauth = getAuth(fireapp)
 // https://firebase.google.com/docs/auth/web/github-auth
 export const provider = new GithubAuthProvider()
 // https://docs.github.com/en/developers/apps/building-oauth-apps/scopes-for-oauth-apps#available-scopes
-provider.addScope('read:user,user:email,user:follow')
+provider.addScope('read:user,user:email,user:follow,repo')
 
 export const authInitAsync = createAsyncThunk('auth/init', async (args: any, { getState }) => new Promise<{}>((resolve) => setTimeout(() => resolve({}), 200)))
 export const signOutAsync = createAsyncThunk('auth/signOut', async (args: any, { getState }) => signOut(fireauth))
@@ -56,7 +65,7 @@ export const signInAsync = createAsyncThunk(
     if (!state.auth.isAuthenticated) {
       provider.setCustomParameters({ redirectTo })
       const result = await signInWithPopup(fireauth, provider)
-      // const credential = GithubAuthProvider.credentialFromResult(result)
+      const credential = GithubAuthProvider.credentialFromResult(result)
       return {
         user: {
           uid: result.user.uid,
@@ -66,7 +75,15 @@ export const signInAsync = createAsyncThunk(
           providerId: result.user.providerId,
           emailVerified: result.user.emailVerified,
         },
-        // credential
+        ...credential && {
+          credential: {
+            providerId: credential.providerId,
+            signinMethod: credential.signInMethod,
+            idToken: credential.idToken,
+            accessToken: credential.accessToken,
+            secret: credential.secret,
+          }
+        }
       }
     }
   }
@@ -82,6 +99,9 @@ export const authSlice = createSlice({
       if (action.payload.user) {
         state.user = action.payload.user
       }
+    },
+    setAuthCredentials: (state, action: PayloadAction<AppCredential>) => {
+      state.credential = action.payload
     }
   }, extraReducers: (builder) => {
     builder
@@ -94,6 +114,9 @@ export const authSlice = createSlice({
           state.isAuthenticated = !!action.payload.user
           // state.credential = action.payload.credential
           state.user = action.payload.user
+          state.credential = action.payload.credential
+          // state.octokit = new Octokit({ auth: state.credential?.accessToken })
+          // state.octokit.request("/user").then(res => res.data).then(data => console.log(data))
         }
         // if (action.payload) {
         //   state.user = action.payload.user
@@ -116,13 +139,17 @@ export const authSlice = createSlice({
         state.status = 'loading'
       }).addCase(signOutAsync.fulfilled, (state, action) => {
         state.status = 'idle'
+        state.isAuthenticated = false
+        state.credential = undefined
       }).addCase(signOutAsync.rejected, (state, action) => {
+        console.log('signout failed')
         state.status = 'failed'
       })
   },
 })
 export const selectAuthUser = (state: RootState) => state.auth.user
+export const selectAuthCredential = (state: RootState) => state.auth.credential
 export const selectIsAuth = (state: RootState) => state.auth.isAuthenticated
 export const selectAuthInitStatus = (state: RootState) => state.auth.initStatus
-export const { authStateChange } = authSlice.actions
+export const { authStateChange, setAuthCredentials } = authSlice.actions
 export default authSlice.reducer

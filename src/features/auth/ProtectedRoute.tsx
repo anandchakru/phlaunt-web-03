@@ -1,6 +1,6 @@
 import React from 'react'
 import { useAppSelector, useAppDispatch } from '../../app/hooks'
-import { selectIsAuth, signOutAsync } from './AuthSlice'
+import { selectAuthCredential, selectIsAuth, selectAuthUser, signOutAsync } from './AuthSlice'
 import {
   Navigate,
   useLocation,
@@ -13,6 +13,8 @@ import { Button } from '@mui/material'
 const ProtectedRoute = ({ redirectTo, ...props }) => {
   const navigate = useNavigate()
   const isAuth = useAppSelector(selectIsAuth)
+  const credential = useAppSelector(selectAuthCredential)
+  const user = useAppSelector(selectAuthUser)
   const dispatch = useAppDispatch()
   let location = useLocation()
 
@@ -21,7 +23,7 @@ const ProtectedRoute = ({ redirectTo, ...props }) => {
       {isAuth && <Button onClick={() => {
         dispatch(signOutAsync({}))
         navigate('/home')
-      }}>Signout</Button>}
+      }}>[{user?.displayName}] Signout</Button>}
       <Button onClick={() => {
         navigate('/home')
       }}>Home</Button>
