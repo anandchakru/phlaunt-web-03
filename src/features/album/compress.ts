@@ -1,7 +1,7 @@
 import { AppImageBlob } from "./AlbumSlice"
 export const compress = async (inputFiles: File[]): Promise<{ [x: number]: AppImageBlob }> => {
   const BASE64_MARKER = 'base64,'
-  const QUALITY = 0.7
+  const QUALITY = 0.2
   const MAX_IMG_SIZE = 2048
   return new Promise((resolve, reject) => {
     const hashCode = function (input: string): number {

@@ -1,25 +1,44 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect } from 'react'
 import { useParams } from 'react-router-dom'
-import axios from 'axios'
-import { Box } from '@mui/material'
+// import { Box } from '@mui/material'
+import { fetchAlbumAsync, GhPageImageInfo, selectAlbumGhPageImages } from './AlbumSlice'
+import { useAppDispatch, useAppSelector } from '../../app/hooks'
+import { Card, CardActionArea, CardContent, CardMedia, Grid, Typography } from '@mui/material'
+
+function PreviewImgs(props: any) {
+  const images: any = props.files
+  const base: string = props.base
+  return (
+    <Grid container rowSpacing={4} columnSpacing={{ xs: 1, sm: 2, md: 3 }}>
+      {images.map((image, index) => <Grid key={index} item xs={6} sm={4} md={3} lg={2}><Card sx={{ maxWidth: 100, }}>
+        <CardActionArea>
+          <CardMedia component="img" height="100" sx={{ objectFit: 'cover' }} image={base + image.path} alt={image.name} />
+          <CardContent>
+            <Typography variant="h5" component="span" sx={{ fontSize: `0.5rem` }}>
+              {image.name}
+            </Typography>
+          </CardContent>
+        </CardActionArea>
+      </Card></Grid>)}
+    </Grid>
+  )
+}
 
 function Album() {
+  const albumGhPageImages = useAppSelector(selectAlbumGhPageImages)
   const { albumId } = useParams()
-  const [page, setPage] = useState<string>('')
+  const dispatch = useAppDispatch()
   useEffect(() => {
     if (albumId) {
+      dispatch(fetchAlbumAsync({ owner: 'anandchakru', name: albumId }))
       console.log(`Album component loaded with albumid:${albumId}`)
-      axios.get(`https://anandchakru.github.io/${albumId}/`).then(res => res.data).then(data => {
-        setPage(data)
-      })
     }
-  }, [albumId])
+  }, [albumId, dispatch])
   return (
     <div>
       Album
       <pre>{albumId}</pre>
-      {/* <iframe src={'https://anandchakru.github.io/' + albumId} seamless></iframe> */}
-      <Box dangerouslySetInnerHTML={{ __html: page }}></Box>
+      <PreviewImgs files={albumGhPageImages?.img} base={albumGhPageImages?.repoInfo.data.homepage} />
     </div>
   )
 }
