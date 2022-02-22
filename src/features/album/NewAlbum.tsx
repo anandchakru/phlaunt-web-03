@@ -30,9 +30,9 @@ function NewAlbum() {
   return (
     <div>
       <Box mb={10}>
-        <h1>
+        <Typography variant="h3" component="div">
           {album ? album?.repo?.data?.name : 'New Album'}
-        </h1>
+        </Typography>
       </Box>
       <Box mt={10}>
         <Backdrop sx={{ backgroundColor: '#ffffffee', zIndex: (theme) => theme.zIndex.drawer + 1 }} open={compressing}>

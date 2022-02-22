@@ -1,6 +1,5 @@
 import React, { useEffect } from 'react'
 import {
-  BrowserRouter,
   Routes,
   Route,
   Navigate,
@@ -15,9 +14,10 @@ import './App.scss'
 import { useAppDispatch, useAppSelector } from './app/hooks'
 import { authInitAsync, authStateChange, setAuthCredentials, fireauth, selectAuthCredential, selectAuthInitStatus, AUTH_CREDENTIAL } from './features/auth/AuthSlice'
 import { onAuthStateChanged } from "firebase/auth"
-import { Backdrop, CircularProgress } from '@mui/material'
+import { Backdrop, Box, CircularProgress } from '@mui/material'
 import NewAlbum from './features/album/NewAlbum'
-
+import ResponsiveAppBar from './features/utils/ResponsiveAppBar'
+import Profile from './features/profile/Profile'
 
 function App() {
 
@@ -59,28 +59,29 @@ function App() {
       }
     }
   }, [authCredential, dispatch])
-  return (
+  return (<Box sx={{ flexGrow: 1 }}>
+    <ResponsiveAppBar />
     <Container sx={{ textAlign: 'center' }}>
-      <BrowserRouter basename='/phlaunt-web-03'>
-        <Routes>
-          <Route path="/" element={<Navigate to="/home" />} />
-          <Route path="/home" element={<Home />} />
-          <Route path="/login" element={<Login />} />
-          <Route element={<ProtectedRoute redirectTo="/login" />}> {/* https://stackoverflow.com/a/69592617 */}
-            <Route path="/gallery" element={<Gallery />} />
-            <Route path="/album" element={<Navigate to="/gallery" />} />
-            <Route path="/album/new" element={<NewAlbum />} />
-            <Route path="/album/:albumId" element={<Album />} />
-          </Route>
-          <Route path="*" element={<h1>404</h1>} />
-        </Routes>
-      </BrowserRouter>
+      <Routes>
+        <Route path="/" element={<Navigate to="/home" />} />
+        <Route path="/home" element={<Home />} />
+        <Route path="/login" element={<Login />} />
+        <Route element={<ProtectedRoute redirectTo="/login" />}> {/* https://stackoverflow.com/a/69592617 */}
+          <Route path="/gallery" element={<Gallery />} />
+          <Route path="/profile" element={<Profile />} />
+          <Route path="/album" element={<Navigate to="/gallery" />} />
+          <Route path="/album/new" element={<NewAlbum />} />
+          <Route path="/album/:albumId" element={<Album />} />
+        </Route>
+        <Route path="*" element={<h1>404</h1>} />
+      </Routes>
       <Backdrop
         sx={{ backgroundColor: '#ffffffee', zIndex: (theme) => theme.zIndex.drawer + 1 }}
         open={authInitStatus === 'loading'}>
         <CircularProgress />
       </Backdrop>
     </Container>
+  </Box>
   )
 }
 

@@ -4,16 +4,15 @@ import './index.scss'
 import { store } from './app/store'
 import { Provider } from 'react-redux'
 import * as serviceWorker from './serviceWorker'
-
+import { BrowserRouter } from 'react-router-dom'
 import App from './App'
-import { Box } from '@mui/material'
 
 ReactDOM.render(
   <React.StrictMode>
     <Provider store={store}>
-      <Box sx={{ flexGrow: 1 }}>
+      <BrowserRouter basename='/phlaunt-web-03'>
         <App />
-      </Box>
+      </BrowserRouter>
     </Provider>
   </React.StrictMode>,
   document.getElementById('root')
