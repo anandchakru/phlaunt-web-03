@@ -1,6 +1,6 @@
 import React from 'react'
 import { useAppSelector, useAppDispatch } from '../../app/hooks'
-import { selectIsAuth, selectAuthUser, signOutAsync } from './AuthSlice'
+import { selectIsAuth, selectAuthUser, signOutAsync, AUTH_CREDENTIAL } from './AuthSlice'
 import {
   Navigate,
   useLocation,
@@ -8,7 +8,7 @@ import {
   useNavigate
 } from 'react-router-dom'
 
-import { Button } from '@mui/material'
+import { Button, Typography } from '@mui/material'
 
 const ProtectedRoute = ({ redirectTo, ...props }) => {
   const navigate = useNavigate()
@@ -20,13 +20,20 @@ const ProtectedRoute = ({ redirectTo, ...props }) => {
 
   if (isAuth) {
     return <>
-      {isAuth && <Button onClick={() => {
-        dispatch(signOutAsync({}))
-        navigate('/home')
-      }}>[{user?.displayName}] Signout</Button>}
+      {isAuth && <>
+        <Button onClick={() => {
+          dispatch(signOutAsync({}))
+          navigate('/home')
+        }}>Signout</Button>
+        <div style={{ float: 'right', padding: '6px 8px', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+          <Typography color="text.secondary" mr={1}>{user?.email}</Typography>
+          <img style={{ marginLeft: '5px', width: '20px', borderRadius: '50%' }} src={user?.photoURL as string} alt="" />
+        </div>
+      </>}
       <Button onClick={() => {
         navigate('/home')
       }}>Home</Button>
+      {!localStorage.getItem(AUTH_CREDENTIAL) && <span>Are you on a private/incognito browser? Signout and try again.</span>}
       <Outlet />
     </>
   } else {

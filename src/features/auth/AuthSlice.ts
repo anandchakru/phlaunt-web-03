@@ -153,3 +153,4 @@ export const selectIsAuth = (state: RootState) => state.auth.isAuthenticated
 export const selectAuthInitStatus = (state: RootState) => state.auth.initStatus
 export const { authStateChange, setAuthCredentials } = authSlice.actions
 export default authSlice.reducer
+export const AUTH_CREDENTIAL = 'LS_AUTH_CREDENTIAL'

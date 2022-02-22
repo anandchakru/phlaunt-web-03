@@ -13,14 +13,14 @@ import ProtectedRoute from './features/auth/ProtectedRoute'
 import Login from './features/auth/Login'
 import './App.scss'
 import { useAppDispatch, useAppSelector } from './app/hooks'
-import { authInitAsync, authStateChange, setAuthCredentials, fireauth, selectAuthCredential, selectAuthInitStatus } from './features/auth/AuthSlice'
+import { authInitAsync, authStateChange, setAuthCredentials, fireauth, selectAuthCredential, selectAuthInitStatus, AUTH_CREDENTIAL } from './features/auth/AuthSlice'
 import { onAuthStateChanged } from "firebase/auth"
 import { Backdrop, CircularProgress } from '@mui/material'
 import NewAlbum from './features/album/NewAlbum'
 
 
 function App() {
-  const AUTH_CREDENTIAL = 'LS_AUTH_CREDENTIAL'
+
   const authInitStatus = useAppSelector(selectAuthInitStatus)
   const authCredential = useAppSelector(selectAuthCredential)
   const dispatch = useAppDispatch()
