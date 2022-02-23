@@ -15,7 +15,7 @@ import MenuItem from '@mui/material/MenuItem'
 
 import { useAppSelector, useAppDispatch } from '../../app/hooks'
 import { selectIsAuth, selectAuthUser, signOutAsync } from '../auth/AuthSlice'
-import { useNavigate, NavigateOptions } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
 
 const ResponsiveAppBar = () => {
   const navigate = useNavigate()
