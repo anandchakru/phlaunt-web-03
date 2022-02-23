@@ -96,13 +96,13 @@ function App() {
 
       {/* Footer */}
       {/* https://stackoverflow.com/a/47071856/234110 */}
-      <Box sx={{ height: '50px', backgroundColor: '#ffffffee', boxShadow: 3, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-        <Container sx={{ textAlign: 'right' }} maxWidth="xl" disableGutters>
+      <Container maxWidth="xl" sx={{ height: '50px', boxShadow: 3, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+        <Box sx={{ textAlign: 'right' }}>
           <Typography variant="caption" color="text.secondary">
             {BUILDINFO.hash?.substring(0, 7)}
           </Typography>
-        </Container>
-      </Box>
+        </Box>
+      </Container>
     </Paper>
   </Box>
   )
