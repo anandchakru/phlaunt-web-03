@@ -1,5 +1,5 @@
 import { createAsyncThunk, createSlice, PayloadAction } from '@reduxjs/toolkit'
-import { signOut } from 'firebase/auth'
+import { OAuthCredential, signOut } from 'firebase/auth'
 // import { OAuthCredential } from 'firebase/auth'
 import { RootState } from '../../app/store'
 
@@ -7,6 +7,7 @@ import { getAuth, signInWithPopup, GithubAuthProvider } from "firebase/auth"
 import { initializeApp } from 'firebase/app'
 import { getAnalytics } from 'firebase/analytics'
 import { Octokit } from "@octokit/core"
+import { AppOctokit } from '../album/AlbumSlice'
 
 export interface AppUser {
   uid: string
@@ -17,11 +18,14 @@ export interface AppUser {
   emailVerified: boolean
 }
 export interface AppCredential {
-  idToken?: string;
-  accessToken?: string;
-  providerId: string;
-  secret?: string;
-  signinMethod: string;
+  uid: string
+  ghuser: string
+  ghid: string
+  idToken?: string
+  accessToken?: string
+  providerId: string
+  secret?: string
+  signinMethod: string
 }
 export interface AuthState {
   isAuthenticated: boolean
@@ -55,17 +59,19 @@ export const provider = new GithubAuthProvider()
 // https://docs.github.com/en/developers/apps/building-oauth-apps/scopes-for-oauth-apps#available-scopes
 provider.addScope('read:user,user:email,user:follow,repo')
 
+// authInitAsync is deprecated
 export const authInitAsync = createAsyncThunk('auth/init', async (args: any, { getState }) => new Promise<{}>((resolve) => setTimeout(() => resolve({}), 200)))
+
 export const signOutAsync = createAsyncThunk('auth/signOut', async (args: any, { getState }) => signOut(fireauth))
 
 export const signInAsync = createAsyncThunk(
-  'auth/signInWithPopup',
-  async ({ redirectTo }: { redirectTo: string }, { getState }) => {
+  'auth/signInWithPopup', async ({ redirectTo }: { redirectTo: string }, { getState }) => {
     const state = getState() as RootState
     if (!state.auth.isAuthenticated) {
       provider.setCustomParameters({ redirectTo })
       const result = await signInWithPopup(fireauth, provider)
       const credential = GithubAuthProvider.credentialFromResult(result)
+      const ghuser = await getGhUserDetails(credential)
       return {
         user: {
           uid: result.user.uid,
@@ -77,6 +83,9 @@ export const signInAsync = createAsyncThunk(
         },
         ...credential && {
           credential: {
+            uid: result.user.uid,
+            ghuser: ghuser?.data?.login,
+            ghid: ghuser?.data?.id,
             providerId: credential.providerId,
             signinMethod: credential.signInMethod,
             idToken: credential.idToken,
@@ -154,3 +163,11 @@ export const selectAuthInitStatus = (state: RootState) => state.auth.initStatus
 export const { authStateChange, setAuthCredentials } = authSlice.actions
 export default authSlice.reducer
 export const AUTH_CREDENTIAL = 'LS_AUTH_CREDENTIAL'
+
+const getGhUserDetails = async (credential: OAuthCredential | null) => {
+  if (credential && credential.providerId === 'github.com') {
+    const octokit = new AppOctokit({ auth: credential.accessToken })
+    return await octokit.request('GET /user')
+  }
+  return undefined
+}

@@ -35,7 +35,7 @@ const ResponsiveAppBar = () => {
               setAnchorElNav(null)
               navigate('/home')
             }} sx={{ my: 2, color: 'white', display: 'block' }}>
-              <HomeIcon /> Phlaunt
+              <HomeIcon />
             </IconButton>
           </Typography>
           <Box sx={{ flexGrow: 1, display: { xs: 'flex', md: 'none' } }}> {/* SMALL SCREEN */}
@@ -75,7 +75,7 @@ const ResponsiveAppBar = () => {
               setAnchorElNav(null)
               navigate('/home')
             }} sx={{ my: 2, color: 'white', display: 'block' }}>
-              Phlaunt
+              <HomeIcon />
             </Button>
           </Typography>
           <Box sx={{ flexGrow: 1, display: { xs: 'none', md: 'flex' } }}> {/* LARGE SCREEN */}

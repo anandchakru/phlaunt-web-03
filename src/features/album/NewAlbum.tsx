@@ -1,7 +1,7 @@
 import React, { useState } from 'react'
 import { Backdrop, Box, Button, Card, CardActionArea, CardContent, CardMedia, CircularProgress, Grid, Typography } from '@mui/material'
 import { useAppDispatch, useAppSelector } from '../../app/hooks'
-import { AppImageBlob, createAlbumAsync, selectAlbum } from './AlbumSlice'
+import { AppImageBlob, upsertAlbumAsync, selectAlbum } from './AlbumSlice'
 import { compress } from './compress'
 
 function PreviewImgs(props: any) {
@@ -64,7 +64,7 @@ function NewAlbum() {
           </Button>
         </label>
         {images && Object.keys(images).length > 0 && <Button sx={{}} variant="contained" color="primary" onClick={() => {
-          dispatch(createAlbumAsync({ name: `pk_${Math.random().toString(36).slice(2)}`, images }))
+          dispatch(upsertAlbumAsync({ repoName: `pk_${Math.random().toString(36).slice(2)}`, images }))
         }}>Upload</Button>}
       </Box>
     </div>

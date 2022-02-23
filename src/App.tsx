@@ -12,15 +12,16 @@ import ProtectedRoute from './features/auth/ProtectedRoute'
 import Login from './features/auth/Login'
 import './App.scss'
 import { useAppDispatch, useAppSelector } from './app/hooks'
-import { authInitAsync, authStateChange, setAuthCredentials, fireauth, selectAuthCredential, selectAuthInitStatus, AUTH_CREDENTIAL } from './features/auth/AuthSlice'
+import { authInitAsync, authStateChange, setAuthCredentials, fireauth, selectAuthCredential, selectAuthInitStatus, AUTH_CREDENTIAL, AppCredential, selectAuthUser } from './features/auth/AuthSlice'
 import { onAuthStateChanged } from "firebase/auth"
 import { Backdrop, Box, CircularProgress } from '@mui/material'
 import NewAlbum from './features/album/NewAlbum'
 import ResponsiveAppBar from './features/utils/ResponsiveAppBar'
 import Profile from './features/profile/Profile'
+import { fetchGalleryAsync } from './features/gallery/GallerySlice'
 
 function App() {
-
+  const authUser = useAppSelector(selectAuthUser)
   const authInitStatus = useAppSelector(selectAuthInitStatus)
   const authCredential = useAppSelector(selectAuthCredential)
   const dispatch = useAppDispatch()
@@ -49,7 +50,7 @@ function App() {
   useEffect(() => {
     if (authCredential) {
       const tmp = localStorage.getItem(AUTH_CREDENTIAL)
-      if (!tmp) {
+      if (!tmp || (authUser && (JSON.parse(tmp) as AppCredential).uid !== authUser.uid)) {
         localStorage.setItem(AUTH_CREDENTIAL, JSON.stringify(authCredential))
       }
     } else {
@@ -58,7 +59,8 @@ function App() {
         dispatch(setAuthCredentials(JSON.parse(tmp)))
       }
     }
-  }, [authCredential, dispatch])
+    dispatch(fetchGalleryAsync(''))
+  }, [authCredential, authUser, dispatch])
   return (<Box sx={{ flexGrow: 1 }}>
     <ResponsiveAppBar />
     <Container sx={{ textAlign: 'center' }}>

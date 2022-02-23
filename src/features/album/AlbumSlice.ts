@@ -2,9 +2,9 @@ import { RootState } from '../../app/store'
 import { createAsyncThunk, createSlice } from '@reduxjs/toolkit'
 import { AppCredential } from '../auth/AuthSlice'
 import { Octokit } from '@octokit/core'
-const { createPullRequest } = require("octokit-plugin-create-pull-request");
+const { createPullRequest } = require("octokit-plugin-create-pull-request")
 
-export const waitFor = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+export const waitFor = (ms: number) => new Promise(resolve => setTimeout(resolve, ms))
 export interface AppImageBlob {
   key: number
   name: string
@@ -69,19 +69,18 @@ const initialState: AlbumState = {
   status: 'idle',
 }
 
-export const createAlbumAsync = createAsyncThunk(
-  'album/create',
-  async ({ name, description, images }: { name: string, description?: string, images: { [x: number]: AppImageBlob } }, { getState }) => {
+export const upsertAlbumAsync = createAsyncThunk(
+  'album/upsert', async ({ repoName, description, images }: { repoName: string, description?: string, images: { [x: number]: AppImageBlob } }, { getState }) => {
     const state = getState() as RootState
     if (state.auth.isAuthenticated) {
-      const { accessToken } = state.auth.credential as AppCredential
+      const { accessToken, ghuser } = state.auth.credential as AppCredential
       const album = state.album.albumRemoteInfo as AlbumRemoteInfo
       const octokit = new AppOctokit({ auth: accessToken })
-      console.log(`creating repo with: ${name}`)
+      console.log(`creating repo with: ${repoName}`)
       let repo = album && album.repo as any
       if (!repo) {
         repo = await octokit.request("POST /user/repos", {
-          name,
+          repoName,
           ...description && { description },
           auto_init: true,
           // delete_branch_on_merge: true,
@@ -90,10 +89,12 @@ export const createAlbumAsync = createAsyncThunk(
         })
         await waitFor(1000)
       }
-      if (repo && repo.data && repo.data.name && repo.data.owner && repo.data.owner.login && images) {
+      if (repo && repo.data && repo.data.name && ghuser
+        && repo.data.owner && repo.data.owner.login
+        && repo.data.owner.login === ghuser && images) {
         const keys = Object.keys(images)
         const req = {
-          owner: repo.data.owner.login,
+          owner: ghuser,
           repo: repo.data.name,
           title: "Adding album images",
           body: `Adding ${keys.length} images to album`,
@@ -107,13 +108,13 @@ export const createAlbumAsync = createAsyncThunk(
         // Merge PR 
         let merge = {}
         if (pr.data && pr.data.number) {
-          const approvePrUrl = `PUT /repos/${repo.data.owner.login}/${name}/pulls/${pr.data.number}/merge`
+          const approvePrUrl = `PUT /repos/${ghuser}/${repoName}/pulls/${pr.data.number}/merge`
           merge = await octokit.request(approvePrUrl, {
             merge_method: 'squash',
           })
         }
         // enable gh-pages
-        const ghPages = await octokit.request(`POST /repos/${repo.data.owner.login}/${name}/pages`, {
+        const ghPages = await octokit.request(`POST /repos/${ghuser}/${repoName}/pages`, {
           source: {
             branch: 'main',
           }
@@ -121,10 +122,13 @@ export const createAlbumAsync = createAsyncThunk(
         // update description
         let repoUpdateHomepage = {}
         if (ghPages && ghPages.data && ghPages.data.html_url) {
-          repoUpdateHomepage = await octokit.request(`PATCH /repos/${repo.data.owner.login}/${name}`, {
+          repoUpdateHomepage = await octokit.request(`PATCH /repos/${ghuser}/${repoName}`, {
             homepage: ghPages.data.html_url
           })
         }
+        // TODO: update DEFAULT_GALLERY_REPO with {cover, name, count, url}
+        // const gallery = state.gallery.gallery?.galleryInfo as GalleryRepoInfo
+
         return { pr, repo, merge, ghPages, repoUpdateHomepage }
       }
     }
@@ -132,8 +136,7 @@ export const createAlbumAsync = createAsyncThunk(
 )
 
 export const fetchAlbumAsync = createAsyncThunk(
-  'album/fetch',
-  async ({ name, owner }: { name: string, owner: string }, { getState }) => {
+  'album/fetch', async ({ name, owner }: { name: string, owner: string }, { getState }) => {
     const state = getState() as RootState
     if (state.auth.isAuthenticated) {
       const { accessToken } = state.auth.credential as AppCredential
@@ -151,15 +154,14 @@ export const albumSlice = createSlice({
   reducers: {
   }, extraReducers: (builder) => {
     builder
-      .addCase(createAlbumAsync.pending, (state) => {
+      .addCase(upsertAlbumAsync.pending, (state) => {
         state.status = 'loading'
-      }).addCase(createAlbumAsync.fulfilled, (state, action) => {
+      }).addCase(upsertAlbumAsync.fulfilled, (state, action) => {
         state.status = 'idle'
         if (action.payload) {
           state.albumRemoteInfo = action.payload
-          console.log(`albumRemoteInfo: ${JSON.stringify(action.payload)}`)
         }
-      }).addCase(createAlbumAsync.rejected, (state) => {
+      }).addCase(upsertAlbumAsync.rejected, (state) => {
         state.status = 'idle'
       }).addCase(fetchAlbumAsync.pending, (state) => {
         state.status = 'loading'

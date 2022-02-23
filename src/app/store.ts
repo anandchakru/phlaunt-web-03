@@ -2,12 +2,14 @@ import { configureStore, ThunkAction, Action } from '@reduxjs/toolkit'
 import counterReducer from '../features/counter/counterSlice'
 import authReducer from '../features/auth/AuthSlice'
 import albumReducer from '../features/album/AlbumSlice'
+import galleryReducer from '../features/gallery/GallerySlice'
 
 export const store = configureStore({
   reducer: {
     counter: counterReducer,
     auth: authReducer,
     album: albumReducer,
+    gallery: galleryReducer,
   },
 })
 
