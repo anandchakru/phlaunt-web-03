@@ -15,7 +15,7 @@ import MenuItem from '@mui/material/MenuItem'
 
 import { useAppSelector, useAppDispatch } from '../../app/hooks'
 import { selectIsAuth, selectAuthUser, signOutAsync } from '../auth/AuthSlice'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, NavigateOptions } from 'react-router-dom'
 
 const ResponsiveAppBar = () => {
   const navigate = useNavigate()
@@ -124,6 +124,13 @@ const ResponsiveAppBar = () => {
                 <Typography textAlign="center">Signout</Typography>
               </MenuItem>
             </Menu>
+          </Box>}
+          {!isAuth && <Box sx={{ flexGrow: 0 }}>
+            <Tooltip title="Signin">
+              <IconButton onClick={() => navigate('/login')} sx={{ p: 0 }}>
+                <Avatar alt={user?.displayName ? user?.displayName as string : user?.email as string} src={user?.photoURL as string} />
+              </IconButton>
+            </Tooltip>
           </Box>}
           {/* PROFILE END */}
         </Toolbar>

@@ -83,4 +83,6 @@ export const gallerySlice = createSlice({
 
 export default gallerySlice.reducer
 export const selectGalleryMeta = (state: RootState) => state.gallery.meta
+export const selectGalleryStatus = (state: RootState) => state.gallery.status
+
 // export const {  } = gallerySlice.actions

@@ -14,18 +14,24 @@ import './App.scss'
 import { useAppDispatch, useAppSelector } from './app/hooks'
 import { authInitAsync, authStateChange, setAuthCredentials, fireauth, selectAuthCredential, selectAuthInitStatus, AUTH_CREDENTIAL, AppCredential, selectAuthUser } from './features/auth/AuthSlice'
 import { onAuthStateChanged } from "firebase/auth"
-import { Backdrop, Box, CircularProgress } from '@mui/material'
+import { Backdrop, Box, CircularProgress, Paper, Typography } from '@mui/material'
 import NewAlbum from './features/album/NewAlbum'
 import ResponsiveAppBar from './features/utils/ResponsiveAppBar'
 import Profile from './features/profile/Profile'
-import { fetchGalleryAsync } from './features/gallery/GallerySlice'
+import { fetchGalleryAsync, selectGalleryStatus } from './features/gallery/GallerySlice'
+import { selectAlbumStatus } from './features/album/AlbumSlice'
+import { BUILDINFO } from './app/buildinfo'
 
 function App() {
   const authUser = useAppSelector(selectAuthUser)
   const authInitStatus = useAppSelector(selectAuthInitStatus)
+  const galleryStatus = useAppSelector(selectGalleryStatus)
+  const albumStatus = useAppSelector(selectAlbumStatus)
   const authCredential = useAppSelector(selectAuthCredential)
   const dispatch = useAppDispatch()
+
   useEffect(() => {
+    dispatch(fetchGalleryAsync('')) // first time app load (already signed in)
     onAuthStateChanged(fireauth, (usr) => {
       if (usr) {
         dispatch(authStateChange({
@@ -38,7 +44,7 @@ function App() {
             emailVerified: usr.emailVerified,
           }
         }))
-
+        dispatch(fetchGalleryAsync('')) // first time signed in
       }
     })
   }, [dispatch])
@@ -59,30 +65,45 @@ function App() {
         dispatch(setAuthCredentials(JSON.parse(tmp)))
       }
     }
-    dispatch(fetchGalleryAsync(''))
   }, [authCredential, authUser, dispatch])
-  return (<Box sx={{ flexGrow: 1 }}>
+
+
+  return (<Box sx={{ flexGrow: 1, minHeight: '100vh' }}>
+    {/* Nav Bar */}
     <ResponsiveAppBar />
-    <Container sx={{ textAlign: 'center' }}>
-      <Routes>
-        <Route path="/" element={<Navigate to="/home" />} />
-        <Route path="/home" element={<Home />} />
-        <Route path="/login" element={<Login />} />
-        <Route element={<ProtectedRoute redirectTo="/login" />}> {/* https://stackoverflow.com/a/69592617 */}
-          <Route path="/gallery" element={<Gallery />} />
-          <Route path="/profile" element={<Profile />} />
-          <Route path="/album" element={<Navigate to="/gallery" />} />
-          <Route path="/album/new" element={<NewAlbum />} />
-          <Route path="/album/:albumId" element={<Album />} />
-        </Route>
-        <Route path="*" element={<h1>404</h1>} />
-      </Routes>
-      <Backdrop
-        sx={{ backgroundColor: '#ffffffee', zIndex: (theme) => theme.zIndex.drawer + 1 }}
-        open={authInitStatus === 'loading'}>
-        <CircularProgress />
-      </Backdrop>
-    </Container>
+    <Paper sx={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
+      {/* Main Page Content */}
+      <Container sx={{ textAlign: 'center', marginBottom: '60px', flex: 1, display: 'flex', flexDirection: 'column' }}>
+        <Routes>
+          <Route path="/" element={<Navigate to="/home" />} />
+          <Route path="/home" element={<Home />} />
+          <Route path="/login" element={<Login />} />
+          <Route element={<ProtectedRoute redirectTo="/login" />}> {/* https://stackoverflow.com/a/69592617 */}
+            <Route path="/gallery" element={<Gallery />} />
+            <Route path="/profile" element={<Profile />} />
+            <Route path="/album" element={<Navigate to="/gallery" />} />
+            <Route path="/album/new" element={<NewAlbum />} />
+            <Route path="/album/:albumId" element={<Album />} />
+          </Route>
+          <Route path="*" element={<h1>404</h1>} />
+        </Routes>
+        <Backdrop
+          sx={{ backgroundColor: '#ffffffee', zIndex: (theme) => theme.zIndex.drawer + 1 }}
+          open={authInitStatus === 'loading' || galleryStatus === 'loading' || albumStatus === 'loading'}>
+          <CircularProgress />
+        </Backdrop>
+      </Container>
+
+      {/* Footer */}
+      {/* https://stackoverflow.com/a/47071856/234110 */}
+      <Box sx={{ height: '50px', backgroundColor: '#ffffffee', boxShadow: 3, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+        <Container sx={{ textAlign: 'right' }} maxWidth="xl" disableGutters>
+          <Typography variant="caption" color="text.secondary">
+            {BUILDINFO.hash?.substring(0, 7)}
+          </Typography>
+        </Container>
+      </Box>
+    </Paper>
   </Box>
   )
 }

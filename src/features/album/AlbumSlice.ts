@@ -176,5 +176,6 @@ export const albumSlice = createSlice({
 
 export default albumSlice.reducer
 export const selectAlbum = (state: RootState) => state.album.albumRemoteInfo
+export const selectAlbumStatus = (state: RootState) => state.album.status
 export const selectAlbumGhPageImages = (state: RootState) => state.album.albumGhPageImages
 export const AppOctokit = Octokit.plugin(createPullRequest)

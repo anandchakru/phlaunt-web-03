@@ -121,23 +121,12 @@ export const authSlice = createSlice({
         state.status = 'idle'
         if (action.payload) {
           state.isAuthenticated = !!action.payload.user
-          // state.credential = action.payload.credential
           state.user = action.payload.user
           state.credential = action.payload.credential
-          // state.octokit = new Octokit({ auth: state.credential?.accessToken })
-          // state.octokit.request("/user").then(res => res.data).then(data => console.log(data))
         }
-        // if (action.payload) {
-        //   state.user = action.payload.user
-        //   if (action.payload.credential) {
-        //     state.credential = action.payload.credential
-        //   }
-        // }
       })
       .addCase(signInAsync.rejected, (state) => {
         state.status = 'failed'
-        // state.isAuthenticated = false
-        // state.user = null
       }).addCase(authInitAsync.pending, (state, action) => {
         state.initStatus = 'loading'
       }).addCase(authInitAsync.fulfilled, (state, action) => {
@@ -148,11 +137,17 @@ export const authSlice = createSlice({
         state.status = 'loading'
       }).addCase(signOutAsync.fulfilled, (state, action) => {
         state.status = 'idle'
+        localStorage.removeItem(AUTH_CREDENTIAL)
         state.isAuthenticated = false
         state.credential = undefined
+        state.user = undefined
       }).addCase(signOutAsync.rejected, (state, action) => {
         console.log('signout failed')
         state.status = 'failed'
+        localStorage.removeItem(AUTH_CREDENTIAL)
+        state.isAuthenticated = false
+        state.credential = undefined
+        state.user = undefined
       })
   },
 })
