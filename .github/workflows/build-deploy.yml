@@ -26,6 +26,9 @@ jobs:
     - name: Install NPM packages
       run: npm ci
     
+    - name: Generate Version
+      run: node ./config/version.js
+
     - name: Build project
       run: npm run build
     
