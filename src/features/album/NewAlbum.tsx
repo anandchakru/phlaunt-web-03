@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { Backdrop, Box, Button, Card, CardActionArea, CardContent, CardMedia, CircularProgress, Grid, Typography } from '@mui/material'
+import { Backdrop, Box, Button, Card, CardActionArea, CardContent, CardMedia, CircularProgress, Grid, TextField, Typography } from '@mui/material'
 import { useAppDispatch, useAppSelector } from '../../app/hooks'
 import { AppImageBlob, upsertAlbumAsync, selectAlbum } from './AlbumSlice'
 import { compress } from './compress'
@@ -22,17 +22,28 @@ function PreviewImgs(props: any) {
   )
 }
 function NewAlbum() {
+  const genNewAlbumName = (len: number = 5, charSet: string = 'bcdfghjkmnpqrstvwxyzBCDFGHJKMNPQRSTVWXYZ0123456789') => {
+    // https://stackoverflow.com/a/19964557/234110
+    const charlen = charSet.length
+    return Array.apply(null, Array(len)).map(() => charSet.charAt(Math.floor(Math.random() * charlen))).join('')
+  }
+  const genRepoName = () => {
+    const dt = new Date()
+    return `pk${dt.getFullYear()}${("0" + (dt.getMonth() + 1)).slice(-2)}${("0" + dt.getDate()).slice(-2)}${albumName.toLocaleLowerCase().replace(/[^a-z0-9]+/g, '_')}`
+  }
+
   const dispatch = useAppDispatch()
   const album = useAppSelector(selectAlbum)
-  // const [rawFiles, setRawFiles] = useState<File[]>([])
   const [images, setImages] = useState<{ [x: number]: AppImageBlob }>({})
   const [compressing, setCompressing] = useState<boolean>(false)
+  const [albumName, setAlbumName] = useState<string>(album?.repo?.data?.name ? album?.repo?.data?.name : genNewAlbumName())
+
   return (
     <div>
       <Box mb={10}>
-        <Typography variant="h3" component="div">
-          {album ? album?.repo?.data?.name : 'New Album'}
-        </Typography>
+        <TextField fullWidth id="standard-basic" variant="standard" defaultValue={albumName} onChange={(e) => {
+          setAlbumName(e.target.value)
+        }} onFocus={event => event.target.select()} />
       </Box>
       <Box mt={10}>
         <Backdrop sx={{ backgroundColor: '#ffffffee', zIndex: (theme) => theme.zIndex.drawer + 1 }} open={compressing}>
@@ -49,8 +60,6 @@ function NewAlbum() {
           type="file"
           onChange={async (event) => {
             const elem = event.target as HTMLInputElement
-            // elem && elem.files && setRawFiles([...rawFiles, ...Array.from(elem.files)])
-            // elem && elem.files && setImages(await compress([...Array.from(elem.files)]))
             if (elem && elem.files) {
               const files = Array.from(elem.files)
               setCompressing(true)
@@ -64,8 +73,8 @@ function NewAlbum() {
           </Button>
         </label>
         {images && Object.keys(images).length > 0 && <Button sx={{}} variant="contained" color="primary" onClick={() => {
-          dispatch(upsertAlbumAsync({ repoName: `pk_${Math.random().toString(36).slice(2)}`, images }))
-        }}>Upload</Button>}
+          dispatch(upsertAlbumAsync({ repoName: genRepoName(), albumName, images }))
+        }} disabled={!albumName || albumName.length === 0}>Upload</Button>}
       </Box>
     </div>
   )

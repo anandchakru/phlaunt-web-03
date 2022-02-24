@@ -2,6 +2,7 @@ import { RootState } from '../../app/store'
 import { createAsyncThunk, createSlice } from '@reduxjs/toolkit'
 import { AppCredential } from '../auth/AuthSlice'
 import { Octokit } from '@octokit/core'
+import { DEFAULT_GALLERY_REPO } from '../gallery/GallerySlice'
 const { createPullRequest } = require("octokit-plugin-create-pull-request")
 
 export const waitFor = (ms: number) => new Promise(resolve => setTimeout(resolve, ms))
@@ -33,7 +34,7 @@ export interface GhPagesInfo {
   data?: any
 }
 
-export interface UpdateRepoHomepageInfo {
+export interface MetaInfo {
   data?: any
 }
 export interface AlbumRemoteInfo { // https://docs.github.com/en/rest/reference/repos
@@ -41,7 +42,7 @@ export interface AlbumRemoteInfo { // https://docs.github.com/en/rest/reference/
   repo?: CreateRepoInfo
   merge?: PullRequestInfo
   ghPages?: GhPagesInfo
-  repoUpdateHomepage?: UpdateRepoHomepageInfo
+  meta?: MetaInfo
 }
 
 export interface ImgInfo {
@@ -70,7 +71,7 @@ const initialState: AlbumState = {
 }
 
 export const upsertAlbumAsync = createAsyncThunk(
-  'album/upsert', async ({ repoName, description, images }: { repoName: string, description?: string, images: { [x: number]: AppImageBlob } }, { getState }) => {
+  'album/upsert', async ({ repoName, albumName, images }: { repoName: string, albumName: string, images: { [x: number]: AppImageBlob } }, { getState }) => {
     const state = getState() as RootState
     if (state.auth.isAuthenticated) {
       const { accessToken, ghuser } = state.auth.credential as AppCredential
@@ -80,9 +81,10 @@ export const upsertAlbumAsync = createAsyncThunk(
       let repo = album && album.repo as any
       if (!repo) {
         repo = await octokit.request("POST /user/repos", {
-          repoName,
-          ...description && { description },
+          name: repoName,
           auto_init: true,
+          description: albumName,
+          homepage: `https://${ghuser}.github.io/${repoName}/`,
           // delete_branch_on_merge: true,
           // has_downloads: false,
           // private: false,
@@ -93,6 +95,7 @@ export const upsertAlbumAsync = createAsyncThunk(
         && repo.data.owner && repo.data.owner.login
         && repo.data.owner.login === ghuser && images) {
         const keys = Object.keys(images)
+        const cover = `https://${ghuser}.github.io/${repoName}/public/img/${images[keys[0]].name}`
         const req = {
           owner: ghuser,
           repo: repo.data.name,
@@ -120,16 +123,28 @@ export const upsertAlbumAsync = createAsyncThunk(
           }
         })
         // update description
-        let repoUpdateHomepage = {}
-        if (ghPages && ghPages.data && ghPages.data.html_url) {
-          repoUpdateHomepage = await octokit.request(`PATCH /repos/${ghuser}/${repoName}`, {
-            homepage: ghPages.data.html_url
-          })
-        }
-        // TODO: update DEFAULT_GALLERY_REPO with {cover, name, count, url}
-        // const gallery = state.gallery.gallery?.galleryInfo as GalleryRepoInfo
+        // let repoUpdateHomepage = {}
+        // if (ghPages && ghPages.data && ghPages.data.html_url) {
+        //   repoUpdateHomepage = await octokit.request(`PATCH /repos/${ghuser}/${repoName}`, {
+        //     homepage: ghPages.data.html_url
+        //   })
+        // }
 
-        return { pr, repo, merge, ghPages, repoUpdateHomepage }
+        // TODO: update DEFAULT_GALLERY_REPO with {cover, name, count, url}
+        const gallery = JSON.parse(JSON.stringify(state.gallery.meta))
+        gallery.push({
+          name: albumName,
+          count: keys.length,
+          uri: `/album/${repoName}`,
+          cover,
+        })
+        const { data: { sha } } = await octokit.request(`GET /repos/${ghuser}/${DEFAULT_GALLERY_REPO}/contents/meta/gallery.json`);
+        const meta = await octokit.request(`PUT /repos/${ghuser}/${DEFAULT_GALLERY_REPO}/contents/meta/gallery.json`, {
+          message: `Adding ${repoName} to gallery.json`,
+          content: btoa(JSON.stringify(gallery)),
+          sha,
+        })
+        return { pr, repo, merge, ghPages, meta }
       }
     }
   }
