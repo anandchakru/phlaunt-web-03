@@ -9,7 +9,6 @@ export type ProtectedRedirectState = {
   from: Location
 }
 
-
 function Login() {
   const isAuth = useAppSelector(selectIsAuth)
   const location = useLocation()
@@ -18,7 +17,7 @@ function Login() {
   const redirectTo = (location && location.state) ? (location.state as ProtectedRedirectState).from.pathname : '/gallery'
   useEffect(() => {
     if (isAuth) {
-      navigate(redirectTo)
+      navigate({ 'pathname': redirectTo, 'search': (location.state as any)?.from?.search, })
     }
   }, [isAuth, redirectTo, navigate, location.state])
   return (
