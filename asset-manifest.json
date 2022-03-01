@@ -1,14 +1,14 @@
 {
   "files": {
     "main.css": "/phlaunt-web-03/static/css/main.964fdded.css",
-    "main.js": "/phlaunt-web-03/static/js/main.b226002e.js",
+    "main.js": "/phlaunt-web-03/static/js/main.891671e5.js",
     "index.html": "/phlaunt-web-03/index.html",
     "static/media/add_photo_alternate_black_24dp.svg": "/phlaunt-web-03/static/media/add_photo_alternate_black_24dp.11059d6212cb67c86285a7d9be723f13.svg",
     "main.964fdded.css.map": "/phlaunt-web-03/static/css/main.964fdded.css.map",
-    "main.b226002e.js.map": "/phlaunt-web-03/static/js/main.b226002e.js.map"
+    "main.891671e5.js.map": "/phlaunt-web-03/static/js/main.891671e5.js.map"
   },
   "entrypoints": [
     "static/css/main.964fdded.css",
-    "static/js/main.b226002e.js"
+    "static/js/main.891671e5.js"
   ]
 }
