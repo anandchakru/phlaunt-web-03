@@ -152,6 +152,7 @@ export const authSlice = createSlice({
   },
 })
 export const selectAuthUser = (state: RootState) => state.auth.user
+export const selectGhUser = (state: RootState) => state.auth.credential?.ghuser
 export const selectAuthCredential = (state: RootState) => state.auth.credential
 export const selectIsAuth = (state: RootState) => state.auth.isAuthenticated
 export const selectAuthInitStatus = (state: RootState) => state.auth.initStatus

@@ -2,11 +2,14 @@ import { useEffect, useState } from 'react'
 import { useParams, useSearchParams } from 'react-router-dom'
 import { fetchAlbumAsync, selectAlbumGhPageImages } from './AlbumSlice'
 import { useAppDispatch, useAppSelector } from '../../app/hooks'
-import { Box, Card, CardActionArea, CardContent, CardMedia, Grid, SxProps, Typography } from '@mui/material'
+import { Avatar, Box, Card, CardActionArea, CardContent, CardMedia, Grid, IconButton, SxProps, Typography } from '@mui/material'
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft'
 import ChevronRightIcon from '@mui/icons-material/ChevronRight'
 import Dialog from '@mui/material/Dialog'
 import AddAPhotoIcon from './add_photo_alternate_black_24dp.svg'
+import { selectGhUser } from '../auth/AuthSlice'
+import ShareIcon from '@mui/icons-material/Share'
+import GitHubIcon from '@mui/icons-material/GitHub'
 const opaqueOnBlur = {
   opacity: 0.5,
   transitionProperty: 'opacity',
@@ -53,25 +56,33 @@ const FullscreenImage = ({ currentImage, base, setCurrentImage, next, prev }) =>
 
 function Album() {
   const albumGhPageImages = useAppSelector(selectAlbumGhPageImages)
-  const { albumId } = useParams()
+  const { albumId, owner } = useParams()
   const dispatch = useAppDispatch()
   const [searchParams] = useSearchParams()
+  const ghUser = useAppSelector(selectGhUser)
   const [currentImage, setCurrentImage] = useState<number>(searchParams && searchParams.get("image") ? parseInt(searchParams.get("image") as string) : -1)
   useEffect(() => {
-    if (albumId) {
-      dispatch(fetchAlbumAsync({ owner: 'anandchakru', name: albumId }))
+    if (albumId && ghUser) {
+      dispatch(fetchAlbumAsync({ owner: owner ? owner : ghUser, name: albumId }))
     }
-  }, [albumId, dispatch])
+  }, [albumId, ghUser, owner, dispatch])
   return (
     <div>
-      <Typography variant="h4">
-        {albumId}
-      </Typography>
-      <Typography mb={5} variant="caption" display="block" color="text.secondary">
-        <a href={albumGhPageImages?.repoInfo.data?.owner.html_url}>
-          By {albumGhPageImages?.repoInfo.data?.owner.login}
-        </a>
-      </Typography>
+      <Box mb={5} >
+        <Typography variant="body2">{albumId}</Typography>
+        <IconButton aria-label="View on Github" color="primary"
+          onClick={() => window.open(albumGhPageImages?.repoInfo.data?.html_url)}>
+          <GitHubIcon />
+        </IconButton>
+        {(owner !== undefined && owner !== ghUser) ? <IconButton aria-label="View Owner on Github" color="primary"
+          onClick={() => window.open(albumGhPageImages?.repoInfo.data?.owner.html_url)}>
+          <Avatar sx={{ width: '24px', height: '24px' }} alt={albumGhPageImages?.repoInfo.data?.owner.html_url} src={albumGhPageImages?.repoInfo.data?.owner.avatar_url} />
+        </IconButton> :
+          <IconButton aria-label="share" disabled color="primary" onClick={() => window.open(window.location.href.replace('album/', 'album/' + ghUser + '/'))}>
+            <ShareIcon />
+            {/* Disabled for now, once copy to clipboard is figured out, will enable it */}
+          </IconButton>}
+      </Box>
       <Grid container rowSpacing={4} columnSpacing={{ xs: 1, sm: 2, md: 3 }}>
         {albumGhPageImages?.img && albumGhPageImages?.img.map((image, index) => <Grid key={index} item xs={6} sm={4} md={3} lg={2}><Card sx={{ maxWidth: 250, }}>
           <CardActionArea>
@@ -95,14 +106,12 @@ function Album() {
             <CardActionArea>
               <CardMedia component="img" height="250" src={AddAPhotoIcon} alt="Add an image" sx={{
                 ...opaqueOnBlur,
+                objectFit: 'contain',
               }}
                 onClick={() => { alert('WIP') }} />
               <CardContent>
                 <Typography variant="body2">
                   Pick images
-                </Typography>
-                <Typography variant="caption" display="block" color="text.secondary">
-                  compresed before upload
                 </Typography>
               </CardContent>
             </CardActionArea>

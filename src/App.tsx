@@ -84,6 +84,7 @@ function App() {
             <Route path="/album" element={<Navigate to="/gallery" />} />
             <Route path="/album/new" element={<NewAlbum />} />
             <Route path="/album/:albumId" element={<Album />} />
+            <Route path="/album/:owner/:albumId" element={<Album />} />
           </Route>
           <Route path="*" element={<h1>404</h1>} />
         </Routes>
