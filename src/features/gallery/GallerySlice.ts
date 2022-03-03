@@ -30,9 +30,11 @@ const initialState: GalleryState = {
 export const fetchGalleryAsync = createAsyncThunk(
   'gallery/fetch', async (nw: string, { getState }) => {
     const state = getState() as RootState
-    const { accessToken, ghuser } = state.auth.credential as AppCredential
-    if (accessToken && ghuser && !state.gallery.gallery) {
-      return getGalleryMeta(ghuser, accessToken)
+    if (state.auth.credential) {
+      const { accessToken, ghuser } = state.auth.credential as AppCredential
+      if (accessToken && ghuser && !state.gallery.gallery) {
+        return getGalleryMeta(ghuser, accessToken)
+      }
     }
   }
 )
