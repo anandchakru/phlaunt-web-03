@@ -7,7 +7,7 @@ import { getAuth, signInWithPopup, GithubAuthProvider } from "firebase/auth"
 import { initializeApp } from 'firebase/app'
 import { getAnalytics } from 'firebase/analytics'
 import { Octokit } from "@octokit/core"
-import { AppOctokit } from '../album/AlbumSlice'
+import { AppOctokit } from '../../app/github'
 
 export interface AppUser {
   uid: string
@@ -122,7 +122,7 @@ export const authSlice = createSlice({
         if (action.payload) {
           state.isAuthenticated = !!action.payload.user
           state.user = action.payload.user
-          state.credential = action.payload.credential
+          state.credential = action.payload.credential as any
         }
       })
       .addCase(signInAsync.rejected, (state) => {

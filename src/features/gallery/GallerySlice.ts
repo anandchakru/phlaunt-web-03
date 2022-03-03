@@ -1,10 +1,7 @@
 import { RootState } from '../../app/store'
 import { createAsyncThunk, createSlice } from '@reduxjs/toolkit'
 import { AppCredential } from '../auth/AuthSlice'
-import { AppOctokit } from '../album/AlbumSlice';
-import axios from 'axios';
-
-export const DEFAULT_GALLERY_REPO = 'phlaunt-meta'
+import { getGalleryMeta } from '../../app/github'
 
 export interface GalleryRepoInfo {
   data?: any
@@ -35,25 +32,22 @@ export const fetchGalleryAsync = createAsyncThunk(
     const state = getState() as RootState
     const { accessToken, ghuser } = state.auth.credential as AppCredential
     if (accessToken && ghuser && !state.gallery.gallery) {
-      const gallery = await axios.get(`https://${ghuser}.github.io/${DEFAULT_GALLERY_REPO}/meta/gallery.json`)
-      // const octokit = new AppOctokit({ auth: accessToken })
-      // const gallery = octokit.request(`GET /repos/${ghuser}/${DEFAULT_GALLERY_REPO}/contents/meta/gallery.json`)
-      return gallery.data
+      return getGalleryMeta(ghuser, accessToken)
     }
   }
 )
 
-export const upsertGalleryAsync = createAsyncThunk(
-  'gallery/upsert', async ({ owner }: { owner: string }, { getState }) => {
-    const state = getState() as RootState
-    if (state.auth.isAuthenticated) {
-      const { accessToken } = state.auth.credential as AppCredential
-      const octokit = new AppOctokit({ auth: accessToken })
-      const gallery = await octokit.request(`PUT /repos/${owner}/${DEFAULT_GALLERY_REPO}/contents/meta/gallery.json`)
-      return { galleryInfo: gallery.data }
-    }
-  }
-)
+// export const upsertGalleryAsync = createAsyncThunk(
+//   'gallery/upsert', async ({ owner }: { owner: string }, { getState }) => {
+//     const state = getState() as RootState
+//     if (state.auth.isAuthenticated) {
+//       const { accessToken } = state.auth.credential as AppCredential
+//       const octokit = new AppOctokit({ auth: accessToken })
+//       const gallery = await octokit.request(`PUT /repos/${owner}/${DEFAULT_GALLERY_REPO}/contents/meta/gallery.json`)
+//       return { galleryInfo: gallery.data }
+//     }
+//   }
+// )
 
 export const gallerySlice = createSlice({
   name: 'gallery',
@@ -66,18 +60,18 @@ export const gallerySlice = createSlice({
       }).addCase(fetchGalleryAsync.fulfilled, (state, action) => {
         state.status = 'idle'
         if (action.payload) {
-          state.meta = action.payload
+          state.meta = action.payload.data
         }
       }).addCase(fetchGalleryAsync.rejected, (state) => {
         state.status = 'idle'
-      }).addCase(upsertGalleryAsync.pending, (state) => {
+      })/*.addCase(upsertGalleryAsync.pending, (state) => {
         state.status = 'loading'
       }).addCase(upsertGalleryAsync.fulfilled, (state, action) => {
         state.status = 'idle'
         state.gallery = action.payload
       }).addCase(upsertGalleryAsync.rejected, (state) => {
         state.status = 'idle'
-      })
+      })*/
   }
 })
 

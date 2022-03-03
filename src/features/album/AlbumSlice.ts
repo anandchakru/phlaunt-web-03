@@ -1,9 +1,7 @@
 import { RootState } from '../../app/store'
 import { createAsyncThunk, createSlice } from '@reduxjs/toolkit'
 import { AppCredential } from '../auth/AuthSlice'
-import { Octokit } from '@octokit/core'
-import { DEFAULT_GALLERY_REPO } from '../gallery/GallerySlice'
-const { createPullRequest } = require("octokit-plugin-create-pull-request")
+import { addImagesToAlbum, AppOctokit, CreateAlbumResponse, createAlbumWithImages } from '../../app/github'
 
 export const waitFor = (ms: number) => new Promise(resolve => setTimeout(resolve, ms))
 export interface AppImageBlob {
@@ -62,7 +60,7 @@ export interface GhPageImageInfo {
 }
 export interface AlbumState {
   status: 'idle' | 'loading' | 'failed'
-  albumRemoteInfo?: AlbumRemoteInfo
+  albumRemoteInfo?: CreateAlbumResponse
   albumGhPageImages?: GhPageImageInfo
 }
 
@@ -70,82 +68,12 @@ const initialState: AlbumState = {
   status: 'idle',
 }
 
-export const upsertAlbumAsync = createAsyncThunk(
-  'album/upsert', async ({ repoName, albumName, images }: { repoName: string, albumName: string, images: { [x: number]: AppImageBlob } }, { getState }) => {
+export const createAlbumAsync = createAsyncThunk(
+  'album/create', async ({ repoName, albumName, images }: { repoName: string, albumName: string, images: { [x: number]: AppImageBlob } }, { getState }) => {
     const state = getState() as RootState
-    if (state.auth.isAuthenticated) {
-      const { accessToken, ghuser } = state.auth.credential as AppCredential
-      const album = state.album.albumRemoteInfo as AlbumRemoteInfo
-      const octokit = new AppOctokit({ auth: accessToken })
-      console.log(`creating repo with: ${repoName}`)
-      let repo = album && album.repo as any
-      if (!repo) {
-        repo = await octokit.request("POST /user/repos", {
-          name: repoName,
-          auto_init: true,
-          description: albumName,
-          homepage: `https://${ghuser}.github.io/${repoName}/`,
-          // delete_branch_on_merge: true,
-          // has_downloads: false,
-          // private: false,
-        })
-        await waitFor(1000)
-      }
-      if (repo && repo.data && repo.data.name && ghuser
-        && repo.data.owner && repo.data.owner.login
-        && repo.data.owner.login === ghuser && images) {
-        const keys = Object.keys(images)
-        const cover = `https://${ghuser}.github.io/${repoName}/public/img/${images[keys[0]].name}`
-        const req = {
-          owner: ghuser,
-          repo: repo.data.name,
-          title: "Adding album images",
-          body: `Adding ${keys.length} images to album`,
-          head: `my-branch-${Date.now()}`,
-          changes: [{
-            files: keys.reduce((acc, key) => ({ ...acc, [`public/img/${images[key].name}`]: { content: images[key].b64, encoding: 'base64' } }), {}),
-            commit: `Adding ${keys.length} images to album`,
-          }]
-        }
-        const pr = await octokit.createPullRequest(req)// https://github.com/gr2m/octokit-plugin-create-pull-request
-        // Merge PR 
-        let merge = {}
-        if (pr.data && pr.data.number) {
-          const approvePrUrl = `PUT /repos/${ghuser}/${repoName}/pulls/${pr.data.number}/merge`
-          merge = await octokit.request(approvePrUrl, {
-            merge_method: 'squash',
-          })
-        }
-        // enable gh-pages
-        const ghPages = await octokit.request(`POST /repos/${ghuser}/${repoName}/pages`, {
-          source: {
-            branch: 'main',
-          }
-        })
-        // update description
-        // let repoUpdateHomepage = {}
-        // if (ghPages && ghPages.data && ghPages.data.html_url) {
-        //   repoUpdateHomepage = await octokit.request(`PATCH /repos/${ghuser}/${repoName}`, {
-        //     homepage: ghPages.data.html_url
-        //   })
-        // }
-
-        // TODO: update DEFAULT_GALLERY_REPO with {cover, name, count, url}
-        const gallery = JSON.parse(JSON.stringify(state.gallery.meta))
-        gallery.push({
-          name: albumName,
-          count: keys.length,
-          uri: `/album/${repoName}`,
-          cover,
-        })
-        const { data: { sha } } = await octokit.request(`GET /repos/${ghuser}/${DEFAULT_GALLERY_REPO}/contents/meta/gallery.json`);
-        const meta = await octokit.request(`PUT /repos/${ghuser}/${DEFAULT_GALLERY_REPO}/contents/meta/gallery.json`, {
-          message: `Adding ${repoName} to gallery.json`,
-          content: btoa(JSON.stringify(gallery)),
-          sha,
-        })
-        return { pr, repo, merge, ghPages, meta }
-      }
+    const { accessToken, ghuser } = state.auth.credential as AppCredential
+    if (state.auth.isAuthenticated && accessToken && ghuser) {
+      return createAlbumWithImages(ghuser, accessToken, repoName, albumName, images)
     }
   }
 )
@@ -163,20 +91,31 @@ export const fetchAlbumAsync = createAsyncThunk(
   }
 )
 
+export const addImagesToAlbumAsync = createAsyncThunk(
+  'album/addImg', async ({ repoName, images, owner, albumName }: { repoName: string, images: { [x: number]: AppImageBlob }, albumName: string, owner?: string }, { getState }) => {
+    const state = getState() as RootState
+    if (state.auth.isAuthenticated) {
+      const { accessToken, ghuser } = state.auth.credential as AppCredential
+      if (accessToken) {
+        return await addImagesToAlbum(ghuser, accessToken, repoName, albumName, images, owner)
+      }
+    }
+  }
+)
 export const albumSlice = createSlice({
   name: 'album',
   initialState,
   reducers: {
   }, extraReducers: (builder) => {
     builder
-      .addCase(upsertAlbumAsync.pending, (state) => {
+      .addCase(createAlbumAsync.pending, (state) => {
         state.status = 'loading'
-      }).addCase(upsertAlbumAsync.fulfilled, (state, action) => {
+      }).addCase(createAlbumAsync.fulfilled, (state, action) => {
         state.status = 'idle'
         if (action.payload) {
-          state.albumRemoteInfo = action.payload
+          state.albumRemoteInfo = action.payload as any
         }
-      }).addCase(upsertAlbumAsync.rejected, (state) => {
+      }).addCase(createAlbumAsync.rejected, (state) => {
         state.status = 'idle'
       }).addCase(fetchAlbumAsync.pending, (state) => {
         state.status = 'loading'
@@ -184,6 +123,16 @@ export const albumSlice = createSlice({
         state.status = 'idle'
         state.albumGhPageImages = action.payload
       }).addCase(fetchAlbumAsync.rejected, (state) => {
+        state.status = 'idle'
+      }).addCase(addImagesToAlbumAsync.pending, (state) => {
+        state.status = 'loading'
+      }).addCase(addImagesToAlbumAsync.fulfilled, (state, action) => {
+        state.status = 'idle'
+        if (action.payload) {
+          // TODO: Update state.albumRemoteInfo
+          // state.albumRemoteInfo = action.payload
+        }
+      }).addCase(addImagesToAlbumAsync.rejected, (state) => {
         state.status = 'idle'
       })
   }
@@ -193,4 +142,3 @@ export default albumSlice.reducer
 export const selectAlbum = (state: RootState) => state.album.albumRemoteInfo
 export const selectAlbumStatus = (state: RootState) => state.album.status
 export const selectAlbumGhPageImages = (state: RootState) => state.album.albumGhPageImages
-export const AppOctokit = Octokit.plugin(createPullRequest)

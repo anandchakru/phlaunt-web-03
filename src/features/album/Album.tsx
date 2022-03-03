@@ -1,19 +1,24 @@
 import { useEffect, useState } from 'react'
-import { useParams, useSearchParams } from 'react-router-dom'
-import { fetchAlbumAsync, selectAlbumGhPageImages } from './AlbumSlice'
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
+import { addImagesToAlbumAsync, AppImageBlob, fetchAlbumAsync, selectAlbumGhPageImages, selectAlbumStatus } from './AlbumSlice'
 import { useAppDispatch, useAppSelector } from '../../app/hooks'
-import { Avatar, Box, Card, CardActionArea, CardContent, CardMedia, Grid, IconButton, SxProps, Typography } from '@mui/material'
+import { Avatar, Box, Card, CardActionArea, CardContent, CardMedia, Backdrop, CircularProgress, Grid, IconButton, SxProps, Typography, Button } from '@mui/material'
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft'
 import ChevronRightIcon from '@mui/icons-material/ChevronRight'
 import Dialog from '@mui/material/Dialog'
 import AddAPhotoIcon from './add_photo_alternate_black_24dp.svg'
+import CloudUploadIcon from './cloud_upload_black_24dp.svg'
 import { selectGhUser } from '../auth/AuthSlice'
 import ShareIcon from '@mui/icons-material/Share'
 import GitHubIcon from '@mui/icons-material/GitHub'
-const opaqueOnBlur = {
+import { compress } from './compress'
+const opacity5 = {
   opacity: 0.5,
   transitionProperty: 'opacity',
   transitionDelay: '0.1s',
+}
+const opaqueOnBlur = {
+  ...opacity5,
   '&:hover': {
     opacity: 1,
     backgroundColor: '#33333344',
@@ -56,11 +61,17 @@ const FullscreenImage = ({ currentImage, base, setCurrentImage, next, prev }) =>
 
 function Album() {
   const albumGhPageImages = useAppSelector(selectAlbumGhPageImages)
+  const status = useAppSelector(selectAlbumStatus)
   const { albumId, owner } = useParams()
   const dispatch = useAppDispatch()
   const [searchParams] = useSearchParams()
   const ghUser = useAppSelector(selectGhUser)
   const [currentImage, setCurrentImage] = useState<number>(searchParams && searchParams.get("image") ? parseInt(searchParams.get("image") as string) : -1)
+
+  const [images, setImages] = useState<{ [x: number]: AppImageBlob }>({})
+  const [compressing, setCompressing] = useState<boolean>(false)
+
+  const navigate = useNavigate()
   useEffect(() => {
     if (albumId && ghUser) {
       dispatch(fetchAlbumAsync({ owner: owner ? owner : ghUser, name: albumId }))
@@ -68,8 +79,8 @@ function Album() {
   }, [albumId, ghUser, owner, dispatch])
   return (
     <div>
-      <Box mb={5} >
-        <Typography variant="body2">{albumId}</Typography>
+      <Box mb={5}>
+        <Typography variant="body2">{albumGhPageImages?.repoInfo.data?.description || albumId}</Typography>
         <IconButton aria-label="View on Github" color="primary"
           onClick={() => window.open(albumGhPageImages?.repoInfo.data?.html_url)}>
           <GitHubIcon />
@@ -83,6 +94,7 @@ function Album() {
             {/* Disabled for now, once copy to clipboard is figured out, will enable it */}
           </IconButton>}
       </Box>
+
       <Grid container rowSpacing={4} columnSpacing={{ xs: 1, sm: 2, md: 3 }}>
         {albumGhPageImages?.img && albumGhPageImages?.img.map((image, index) => <Grid key={index} item xs={6} sm={4} md={3} lg={2}><Card sx={{ maxWidth: 250, }}>
           <CardActionArea>
@@ -104,11 +116,13 @@ function Album() {
         <Grid key="add_an_img" item xs={6} sm={4} md={3} lg={2}>
           <Card sx={{ maxWidth: 250, }}>
             <CardActionArea>
-              <CardMedia component="img" height="250" src={AddAPhotoIcon} alt="Add an image" sx={{
-                ...opaqueOnBlur,
-                objectFit: 'contain',
-              }}
-                onClick={() => { alert('WIP') }} />
+              <label htmlFor="raised-button-file">
+                <CardMedia component="img" height="250" src={AddAPhotoIcon} alt="Add an image" sx={{
+                  ...opaqueOnBlur,
+                  objectFit: 'contain',
+                }}
+                  onClick={() => { }} />
+              </label>
               <CardContent>
                 <Typography variant="body2">
                   Pick images
@@ -117,7 +131,74 @@ function Album() {
             </CardActionArea>
           </Card>
         </Grid>
+        {images && Object.keys(images).map((image, index) => <Grid key={index} item xs={6} sm={4} md={3} lg={2}><Card sx={{ maxWidth: 250, opacity: 0.5 }}>
+          <CardActionArea>
+            <CardMedia component="img" height="250" sx={{ objectFit: 'cover' }} image={URL.createObjectURL(images[image].blob)} alt={images[image].name}
+              onClick={() => {
+                setCurrentImage(index)
+              }} />
+            <CardContent>
+              <Typography variant="body2">
+                {images[image].name}
+              </Typography>
+              <Typography variant="caption" display="block" color="text.secondary">
+                (upload pending)
+              </Typography>
+            </CardContent>
+          </CardActionArea>
+        </Card>
+        </Grid>)}
+        {images && albumId && Object.keys(images).length > 0 && <>
+          <Grid key="add_an_img" item xs={6} sm={4} md={3} lg={2}>
+            <Card sx={{ maxWidth: 250, }}>
+              <CardActionArea>
+                <CardMedia component="img" height="250" src={CloudUploadIcon} alt="Add an image" sx={{
+                  ...(compressing || status === 'loading' ? opacity5 : opaqueOnBlur),
+                  objectFit: 'contain',
+                }}
+                  onClick={async () => {
+                    if (!compressing && status !== 'loading') {
+                      await dispatch(addImagesToAlbumAsync({
+                        repoName: albumId, images,
+                        albumName: albumGhPageImages?.repoInfo.data?.description || albumId, owner
+                      }))
+                      setImages({})
+                      alert((ghUser === owner) ? `Images waiting for ${owner} approval` : `Images added, it will take about a minute to see changes.`)
+                      navigate('/gallery')
+                    }
+                  }} />
+                <CardContent>
+                  <Typography variant="body2">
+                    Upload
+                  </Typography>
+                </CardContent>
+              </CardActionArea>
+            </Card>
+          </Grid>
+        </>}
+
+        {/* File upload */}
+        <input
+          accept="image/jpeg"
+          style={{ display: 'none' }}
+          id="raised-button-file"
+          multiple
+          type="file"
+          onChange={async (event) => {
+            const elem = event.target as HTMLInputElement
+            if (elem && elem.files) {
+              const files = Array.from(elem.files)
+              setCompressing(true)
+              setImages(await compress(files))
+              setCompressing(false)
+            }
+          }} />
       </Grid>
+      <Box mt={10}>
+        <Backdrop sx={{ backgroundColor: '#ffffffee', zIndex: (theme) => theme.zIndex.drawer + 1 }} open={compressing || status === 'loading'}>
+          {(compressing || status === 'loading') && <CircularProgress />}
+        </Backdrop>
+      </Box>
       <FullscreenImage base={albumGhPageImages?.repoInfo.data.homepage}
         currentImage={albumGhPageImages?.img[currentImage]}
         prev={currentImage >= 0 ? currentImage - 1 : undefined}
