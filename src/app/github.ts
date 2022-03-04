@@ -1,8 +1,8 @@
 import { Octokit } from "@octokit/core"
 import axios, { AxiosResponse } from 'axios'
 import { AppImageBlob } from "../features/album/AlbumSlice"
-import { createPullRequest } from "../createPullRequest"
-// const { createPullRequest } = require("octokit-plugin-create-pull-request")
+// import { createPullRequest } from "../createPullRequest"
+const { createPullRequest } = require("octokit-plugin-create-pull-request")
 
 const AppOctokit = Octokit.plugin(createPullRequest)
 const waitFor = (ms: number) => new Promise(resolve => setTimeout(resolve, ms))
@@ -62,18 +62,25 @@ const updateGalleryMeta = (ghUser: string, accessToken: string, repoName: string
     const galleryMeta = await getGalleryMeta(ghUser, accessToken)
     const gallery = galleryMeta.data as Array<{ name: string, cover: string, count: number, uri: string }>
 
-    const existing = gallery.findIndex(album => album.uri === uri)
-
-    const updatedGallery = gallery.map((album, index) => {
-      if (existing === index) {
-        return album
+    let updatedExisting = false
+    let updatedCount = 0
+    const updatedGallery = new Array<any>()
+    gallery.forEach((album, index) => {
+      if (album.uri === uri) {
+        updatedCount = (Number(album.count) + Number(count))
+        updatedGallery.push({ ...album, ...(cover.length > 0 && { cover }), name, count: updatedCount })
       } else {
-        return { ...album, cover, name, count: (Number(album.count) + Number(count)) }
+        updatedExisting = true
+        updatedGallery.push(album)
       }
     })
+    if (!updatedExisting) {
+      updatedGallery.push({ cover, name, count, uri })
+    }
+
     const { data: { sha } } = await octokit.request(`GET /repos/${ghUser}/${DEFAULT_GALLERY_REPO}/contents/meta/gallery.json`);
     const galleryGhInfo = await octokit.request(`PUT /repos/${ghUser}/${DEFAULT_GALLERY_REPO}/contents/meta/gallery.json`, {
-      message: `Adding ${repoName} to gallery.json`,
+      message: updatedExisting ? `Updated ${repoName} count to ${updatedCount}` : `Adding ${repoName} to gallery.json`,
       content: btoa(JSON.stringify(updatedGallery)),
       sha,
     })
@@ -232,43 +239,57 @@ const createAlbumWithImages = (ghUser: string, accessToken: string, repoName: st
   }
 })
 
-const addImagesToAlbum = (ghUser: string, accessToken: string, repoName: string, albumName: string, images: { [x: number]: AppImageBlob }, owner?: string) => new Promise<AddImagesToAlbumResponse>(async (resolve, reject) => {
+const addImagesToAlbum = (ghUser: string, accessToken: string, repoName: string, albumName: string, images: { [x: number]: AppImageBlob }, owner: string) => new Promise<AddImagesToAlbumResponse>(async (resolve, reject) => {
   let response = {}
   try {
     const octokit = new AppOctokit({ auth: accessToken })
     // Add images
     const keys = images ? Object.keys(images) : []
     if (keys.length > 0) {
-      const pullReqGhInfo = await octokit.createPullRequest({
-        owner: owner ? owner : ghUser,
-        repo: repoName,
-        title: "Adding album images",
-        body: `Adding ${keys.length} images to album`,
-        head: `my-branch-${Date.now()}`,
-        changes: [{
-          files: keys.reduce((acc, key) => ({ ...acc, [`public/img/${images[key].name}`]: { content: images[key].b64, encoding: 'base64' } }), {}),
-          commit: `Adding ${keys.length} images to album`,
-        }]
-      })
-      response = { ...response, pullReqGhInfo }
-
-      if (!owner || ghUser === owner) {
-        // Merge Pull Request
-        let mergeGhInfo = {}
-        if (pullReqGhInfo?.data && pullReqGhInfo.data.number) {
-          const approvePrUrl = `PUT /repos/${ghUser}/${repoName}/pulls/${pullReqGhInfo.data.number}/merge`
-          mergeGhInfo = await octokit.request(approvePrUrl, {
-            merge_method: 'squash',
-          })
+      let hasPermission = false
+      // Check if ghUser has permission to add images to this repo
+      if (owner !== ghUser) {
+        try {
+          const ownerGhInfo = await octokit.request(`GET /repos/${owner}/${repoName}/collaborators/${ghUser}`)
+          hasPermission = true
+        } catch (e) {
+          hasPermission = false
         }
-        response = { ...response, mergeGhInfo }
+      }
+      if (hasPermission) {
+        const pullReqGhInfo = await octokit.createPullRequest({
+          owner: owner ? owner : ghUser,
+          repo: repoName,
+          title: "Adding album images",
+          body: `Adding ${keys.length} images to album`,
+          head: `my-branch-${Date.now()}`,
+          changes: [{
+            files: keys.reduce((acc, key) => ({ ...acc, [`public/img/${images[key].name}`]: { content: images[key].name, encoding: 'utf-8' } }), {}), //images[key].b64, encoding: 'base64'
+            commit: `Adding ${keys.length} images to album`,
+          }]
+        })
+        response = { ...response, pullReqGhInfo }
 
-        // Update gallery.json
-        const cover = `https://${ghUser}.github.io/${repoName}/public/img/${images[keys[0]].name}`
-        const uri = `/album/${repoName}`
-        const count = keys.length
-        const updateGalleryGhInfo = await updateGalleryMeta(ghUser, accessToken, repoName, cover, albumName, count, uri)
-        response = { ...response, updateGalleryGhInfo }
+        if (!owner || ghUser === owner) {
+          // Merge Pull Request
+          let mergeGhInfo = {}
+          if (pullReqGhInfo?.data && pullReqGhInfo.data.number) {
+            const approvePrUrl = `PUT /repos/${ghUser}/${repoName}/pulls/${pullReqGhInfo.data.number}/merge`
+            mergeGhInfo = await octokit.request(approvePrUrl, {
+              merge_method: 'squash',
+            })
+          }
+          response = { ...response, mergeGhInfo }
+
+          // Update gallery.json
+          const uri = `/album/${repoName}`
+          const count = keys.length
+          const updateGalleryGhInfo = await updateGalleryMeta(ghUser, accessToken, repoName, '', albumName, count, uri)
+          response = { ...response, updateGalleryGhInfo }
+        }
+      } else {
+        console.log('No permission to add images to this repo')
+        // TODO: Handle no permission scenario
       }
     }
     resolve(response)

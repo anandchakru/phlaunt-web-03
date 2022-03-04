@@ -158,9 +158,11 @@ function Album() {
                 }}
                   onClick={async () => {
                     if (!compressing && status !== 'loading') {
-                      await dispatch(addImagesToAlbumAsync({
+                      const ownerOrFork = owner ? owner : ghUser
+                      ownerOrFork && await dispatch(addImagesToAlbumAsync({
                         repoName: albumId, images,
-                        albumName: albumGhPageImages?.repoInfo.data?.description || albumId, owner
+                        albumName: albumGhPageImages?.repoInfo.data?.description || albumId,
+                        owner: ownerOrFork,
                       }))
                       setImages({})
                       alert((ghUser === owner) ? `Images waiting for ${owner} approval` : `Images added, it will take about a minute to see changes.`)

@@ -92,7 +92,7 @@ export const fetchAlbumAsync = createAsyncThunk(
 )
 
 export const addImagesToAlbumAsync = createAsyncThunk(
-  'album/addImg', async ({ repoName, images, owner, albumName }: { repoName: string, images: { [x: number]: AppImageBlob }, albumName: string, owner?: string }, { getState }) => {
+  'album/addImg', async ({ repoName, images, owner, albumName }: { repoName: string, images: { [x: number]: AppImageBlob }, albumName: string, owner: string }, { getState }) => {
     const state = getState() as RootState
     if (state.auth.isAuthenticated) {
       const { accessToken, ghuser } = state.auth.credential as AppCredential
