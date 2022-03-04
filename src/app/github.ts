@@ -252,6 +252,7 @@ const addImagesToAlbum = (ghUser: string, accessToken: string, repoName: string,
         try {
           const ownerGhInfo = await octokit.request(`GET /repos/${owner}/${repoName}/collaborators/${ghUser}`)
           hasPermission = true
+          response = { ...response, ownerGhInfo }
         } catch (e) {
           hasPermission = false
         }
