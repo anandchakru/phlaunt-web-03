@@ -257,39 +257,32 @@ const addImagesToAlbum = (ghUser: string, accessToken: string, repoName: string,
         }
       }
       if (hasPermission) {
-        const pullReqGhInfo = await octokit.createPullRequest({
-          owner: owner ? owner : ghUser,
-          repo: repoName,
-          title: "Adding album images",
-          body: `Adding ${keys.length} images to album`,
-          head: `my-branch-${Date.now()}`,
-          changes: [{
-            files: keys.reduce((acc, key) => ({ ...acc, [`public/img/${images[key].name}`]: { content: images[key].name, encoding: 'utf-8' } }), {}), //images[key].b64, encoding: 'base64'
-            commit: `Adding ${keys.length} images to album`,
-          }]
-        })
-        response = { ...response, pullReqGhInfo }
-
-        if (!owner || ghUser === owner) {
-          // Merge Pull Request
-          let mergeGhInfo = {}
-          if (pullReqGhInfo?.data && pullReqGhInfo.data.number) {
-            const approvePrUrl = `PUT /repos/${ghUser}/${repoName}/pulls/${pullReqGhInfo.data.number}/merge`
-            mergeGhInfo = await octokit.request(approvePrUrl, {
-              merge_method: 'squash',
-            })
-          }
-          response = { ...response, mergeGhInfo }
-
-          // Update gallery.json
-          const uri = `/album/${repoName}`
-          const count = keys.length
-          const updateGalleryGhInfo = await updateGalleryMeta(ghUser, accessToken, repoName, '', albumName, count, uri)
-          response = { ...response, updateGalleryGhInfo }
-        }
+        response = await pushImages(octokit, owner, ghUser, repoName, keys, images, response, accessToken, albumName)
       } else {
         console.log('No permission to add images to this repo')
-        // TODO: Handle no permission scenario
+        // Fork the repo
+        const forkGhInfo = await octokit.request(`POST /repos/${owner}/${repoName}/forks`)
+        console.log(`Forked @ ${forkGhInfo.data}`)
+        const forkName = forkGhInfo.data.name
+        let forkCheckCount = 0
+        while (forkCheckCount < 10) {
+          try {
+            const forkCreatedGhInfo = await octokit.request(`GET /repos/${ghUser}/${forkName}`)
+            if (forkCreatedGhInfo.data) {
+              response = { ...response, forkCreatedGhInfo }
+              break
+            }
+          } catch (e) {
+            forkCheckCount++
+          }
+          await waitFor(1000)
+        }
+        if (response['forkCreatedGhInfo']?.data) {
+          response = await pushImages(octokit, owner, ghUser, repoName, keys, images, response, accessToken, albumName, forkName)
+        } else {
+          // TODO: Handle no permission scenario
+          console.log('Fork not created')
+        }
       }
     }
     resolve(response)
@@ -301,4 +294,52 @@ const addImagesToAlbum = (ghUser: string, accessToken: string, repoName: string,
 export {
   getGalleryMeta, createGalleryMeta, createAlbumWithImages, addImagesToAlbum,
   AppOctokit, waitFor, DEFAULT_GALLERY_REPO
+}
+
+async function pushImages(octokit: any, owner: string, ghUser: string, repoName: string, keys: string[], images: { [x: number]: AppImageBlob }, response: {}, accessToken: string, albumName: string, forkName?: string) {
+  const isForked = owner !== ghUser
+  const branch = `my-branch-${Date.now()}`
+  // Create Pull Request
+  const pullReqGhInfo = await octokit.createPullRequest({
+    owner: isForked ? ghUser : owner,
+    repo: isForked ? forkName : repoName,
+    title: "Adding album images",
+    body: `Adding ${keys.length} images to album`,
+    head: branch,
+    changes: [{
+      files: keys.reduce((acc, key) => ({ ...acc, [`public/img/${images[key].name}`]: { content: images[key].b64, encoding: 'base64' } }), {}),
+      commit: `Adding ${keys.length} images to album`,
+    }]
+  })
+  response = { ...response, pullReqGhInfo }
+
+  // Merge Pull Request
+  let mergeGhInfo = {}
+  if (pullReqGhInfo?.data && pullReqGhInfo.data.number) {
+    const approvePrUrl = `PUT /repos/${ghUser}/${isForked ? forkName : repoName}/pulls/${pullReqGhInfo.data.number}/merge`
+    mergeGhInfo = await octokit.request(approvePrUrl, {
+      merge_method: 'squash',
+    })
+  }
+  response = { ...response, mergeGhInfo }
+
+  if (isForked) {
+    // Create a PR to main repo
+    const pullReqGhInfo = await octokit.request(`POST /repos/${owner}/${repoName}/pulls`, {
+      title: "Adding album images",
+      body: `Adding ${keys.length} images to album`,
+      head: `${ghUser}:${branch}`,
+      base: 'main',
+      draft: false,
+    })
+    response = { ...response, pullReqGhInfo }
+    // TODO: Update glallery.json 
+  } else {
+    // Update gallery.json
+    const uri = `/album/${repoName}`
+    const count = keys.length
+    const updateGalleryGhInfo = await updateGalleryMeta(ghUser, accessToken, repoName, '', albumName, count, uri)
+    response = { ...response, updateGalleryGhInfo }
+  }
+  return response
 }
