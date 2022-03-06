@@ -2,7 +2,7 @@ import { Octokit } from "@octokit/core"
 import axios, { AxiosResponse } from 'axios'
 import { AppImageBlob } from "../features/album/AlbumSlice"
 // import { createPullRequest } from "../createPullRequest"
-const { createPullRequest } = require("octokit-plugin-create-pull-request")
+import { createPullRequest } from "octokit-plugin-create-pull-request"
 
 const AppOctokit = Octokit.plugin(createPullRequest)
 const waitFor = (ms: number) => new Promise(resolve => setTimeout(resolve, ms))
