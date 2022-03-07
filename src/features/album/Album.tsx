@@ -149,6 +149,9 @@ function Album() {
         {/* Upload pendingg images */}
         {images && Object.keys(images).map((image, index) => <Box key={index} height="250">
           <img loading="lazy" style={{ ...masonryImg, opacity: 0.3 }} src={URL.createObjectURL(images[image].blob)} alt={images[image].name} />
+          <Typography variant="caption" display="block" color="text.secondary">
+            (upload pending)
+          </Typography>
         </Box>)}
         {/* Album images */}
         {albumGhPageImages?.img && albumGhPageImages?.img.map((image, index) => <Box key={index}
