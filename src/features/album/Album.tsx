@@ -6,13 +6,16 @@ import { Avatar, Box, Card, CardActionArea, CardContent, CardMedia, Backdrop, Ci
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft'
 import ChevronRightIcon from '@mui/icons-material/ChevronRight'
 import Dialog from '@mui/material/Dialog'
-import AddAPhotoIcon from './add_photo_alternate_black_24dp.svg'
-import CloudUploadIcon from './cloud_upload_black_24dp.svg'
 import { selectGhUser } from '../auth/AuthSlice'
 import ShareIcon from '@mui/icons-material/Share'
 import GitHubIcon from '@mui/icons-material/GitHub'
+import AddAPhotoIcon from '@mui/icons-material/AddAPhoto'
+import CloudUploadIcon from '@mui/icons-material/CloudUpload'
+import GridViewIcon from '@mui/icons-material/GridView'
+import ViewCompactIcon from '@mui/icons-material/ViewCompact'
 import { compress } from './compress'
 import RefreshIcon from '@mui/icons-material/Refresh'
+import { Masonry } from '@mui/lab'
 
 const opacity5 = {
   opacity: 0.1,
@@ -38,6 +41,10 @@ const fsButtonStyles = {
   transitionProperty: 'opacity',
   transitionDelay: '0.1s',
 } as SxProps
+const masonryImg = {
+  borderRadius: 4, display: 'block', width: '100%',
+  boxShadow: '0 4px 8px 0 rgba(0, 0, 0, 0.2), 0 6px 20px 0 rgba(0, 0, 0, 0.19)',
+}
 
 const FullscreenImage = ({ currentImage, base, setCurrentImage, next, prev }) => <Dialog onClose={() => setCurrentImage(-1)}
   open={(currentImage && currentImage.path !== undefined) ? true : false} fullScreen
@@ -71,6 +78,7 @@ function Album() {
 
   const [images, setImages] = useState<{ [x: number]: AppImageBlob }>({})
   const [compressing, setCompressing] = useState<boolean>(false)
+  const [isMasonry, setMasonry] = useState<boolean>(true)
 
   const navigate = useNavigate()
   useEffect(() => {
@@ -90,6 +98,11 @@ function Album() {
             }} color="inherit" >
             <RefreshIcon />
           </IconButton>
+          {isMasonry ? <IconButton aria-label="Switch to Grid View" color="inherit" onClick={() => setMasonry(false)}>
+            <GridViewIcon />
+          </IconButton> : <IconButton aria-label="Switch to Masonary View" color="inherit" onClick={() => setMasonry(true)}>
+            <ViewCompactIcon />
+          </IconButton>}
           <IconButton aria-label="View on Github" color="primary"
             onClick={() => window.open(albumGhPageImages?.repoInfo.data?.html_url)}>
             <GitHubIcon />
@@ -102,6 +115,28 @@ function Album() {
               <ShareIcon />
               {/* Disabled for now, once copy to clipboard is figured out, will enable it */}
             </IconButton>}
+          {images && albumId && Object.keys(images).length > 0 ?
+            <IconButton aria-label="View on Github" color="primary" onClick={async () => {
+              if (!compressing && status !== 'loading') {
+                const ownerOrFork = owner ? owner : ghUser
+                ownerOrFork && await dispatch(addImagesToAlbumAsync({
+                  repoName: albumId, images,
+                  albumName: albumGhPageImages?.repoInfo.data?.description || albumId,
+                  owner: ownerOrFork,
+                }))
+                setImages({})
+                alert((ghUser === owner) ? `Images waiting for ${owner} approval` : `Images added, it will take about a minute to see changes.`)
+                navigate('/gallery')
+              }
+            }}>
+              <CloudUploadIcon />
+            </IconButton>
+            : <IconButton aria-label="View on Github" color="primary">
+              <label htmlFor="raised-button-file">
+                <AddAPhotoIcon />
+              </label>
+            </IconButton>}
+
           <Box sx={{ flexGrow: 1 }}>
             <Typography variant="h5" component="div">
               {albumGhPageImages?.repoInfo.data?.description || albumId}
@@ -110,10 +145,38 @@ function Album() {
         </Toolbar>
       </AppBar>
 
-      <Grid container rowSpacing={4} columnSpacing={{ xs: 1, sm: 2, md: 3 }}>
+      {isMasonry ? <Masonry columns={{ xs: 2, sm: 3, md: 4, lg: 5 }} spacing={2}>
+        {/* Upload pendingg images */}
+        {images && Object.keys(images).map((image, index) => <Box key={index} height="250">
+          <img loading="lazy" style={{ ...masonryImg, opacity: 0.3 }} src={URL.createObjectURL(images[image].blob)} alt={images[image].name} />
+        </Box>)}
+        {/* Album images */}
+        {albumGhPageImages?.img && albumGhPageImages?.img.map((image, index) => <Box key={index}
+          onClick={() => {
+            setCurrentImage(index)
+          }}>
+          <img loading="lazy" style={{ ...masonryImg }} src={albumGhPageImages?.repoInfo.data.homepage + image.path} alt={image.name} />
+        </Box>)}
+      </Masonry> : <Grid container rowSpacing={4} columnSpacing={{ xs: 1, sm: 2, md: 3 }}>
+        {/* Upload pendingg images */}
+        {images && Object.keys(images).map((image, index) => <Grid key={index} item xs={6} sm={4} md={3} lg={2}><Card sx={{ maxWidth: 250, opacity: 0.5 }}>
+          <CardActionArea>
+            <CardMedia component="img" height="250" sx={{ objectFit: 'cover' }} loading="lazy" image={URL.createObjectURL(images[image].blob)} alt={images[image].name} />
+            <CardContent>
+              <Typography variant="body2">
+                {images[image].name}
+              </Typography>
+              <Typography variant="caption" display="block" color="text.secondary">
+                (upload pending)
+              </Typography>
+            </CardContent>
+          </CardActionArea>
+        </Card>
+        </Grid>)}
+        {/* Album images */}
         {albumGhPageImages?.img && albumGhPageImages?.img.map((image, index) => <Grid key={index} item xs={6} sm={4} md={3} lg={2}><Card sx={{ maxWidth: 250, }}>
           <CardActionArea>
-            <CardMedia component="img" height="250" sx={{ objectFit: 'cover' }} image={albumGhPageImages?.repoInfo.data.homepage + image.path} alt={image.name}
+            <CardMedia component="img" height="250" sx={{ objectFit: 'cover' }} loading="lazy" image={albumGhPageImages?.repoInfo.data.homepage + image.path} alt={image.name}
               onClick={() => {
                 setCurrentImage(index)
               }} />
@@ -128,92 +191,23 @@ function Album() {
           </CardActionArea>
         </Card>
         </Grid>)}
-        {/* AddPhoto icon */}
-        <Grid key="add_an_img" item xs={6} sm={4} md={3} lg={2}>
-          <Card sx={{ maxWidth: 250, }}>
-            <CardActionArea>
-              <label htmlFor="raised-button-file">
-                <CardMedia component="img" height="250" src={AddAPhotoIcon} alt="Add an image" sx={{
-                  ...opaqueOnBlur,
-                  objectFit: 'contain',
-                }}
-                  onClick={() => { }} />
-              </label>
-              <CardContent>
-                <Typography variant="body2">
-                  Pick images
-                </Typography>
-              </CardContent>
-            </CardActionArea>
-          </Card>
-        </Grid>
-        {/* Upload pendingg images */}
-        {images && Object.keys(images).map((image, index) => <Grid key={index} item xs={6} sm={4} md={3} lg={2}><Card sx={{ maxWidth: 250, opacity: 0.5 }}>
-          <CardActionArea>
-            <CardMedia component="img" height="250" sx={{ objectFit: 'cover' }} image={URL.createObjectURL(images[image].blob)} alt={images[image].name}
-              onClick={() => {
-                setCurrentImage(index)
-              }} />
-            <CardContent>
-              <Typography variant="body2">
-                {images[image].name}
-              </Typography>
-              <Typography variant="caption" display="block" color="text.secondary">
-                (upload pending)
-              </Typography>
-            </CardContent>
-          </CardActionArea>
-        </Card>
-        </Grid>)}
-        {/* Upload button */}
-        {images && albumId && Object.keys(images).length > 0 && <>
-          <Grid key="add_an_img" item xs={6} sm={4} md={3} lg={2}>
-            <Card sx={{ maxWidth: 250, }}>
-              <CardActionArea>
-                <CardMedia component="img" height="250" src={CloudUploadIcon} alt="Add an image" sx={{
-                  ...(compressing || status === 'loading' ? opacity5 : opaqueOnBlur),
-                  objectFit: 'contain',
-                }}
-                  onClick={async () => {
-                    if (!compressing && status !== 'loading') {
-                      const ownerOrFork = owner ? owner : ghUser
-                      ownerOrFork && await dispatch(addImagesToAlbumAsync({
-                        repoName: albumId, images,
-                        albumName: albumGhPageImages?.repoInfo.data?.description || albumId,
-                        owner: ownerOrFork,
-                      }))
-                      setImages({})
-                      alert((ghUser === owner) ? `Images waiting for ${owner} approval` : `Images added, it will take about a minute to see changes.`)
-                      navigate('/gallery')
-                    }
-                  }} />
-                <CardContent>
-                  <Typography variant="body2">
-                    Upload
-                  </Typography>
-                </CardContent>
-              </CardActionArea>
-            </Card>
-          </Grid>
-        </>}
-
-        {/* File upload */}
-        <input
-          accept="image/jpeg"
-          style={{ display: 'none' }}
-          id="raised-button-file"
-          multiple
-          type="file"
-          onChange={async (event) => {
-            const elem = event.target as HTMLInputElement
-            if (elem && elem.files) {
-              const files = Array.from(elem.files)
-              setCompressing(true)
-              setImages(await compress(files))
-              setCompressing(false)
-            }
-          }} />
-      </Grid>
+      </Grid>}
+      {/* File upload */}
+      <input
+        accept="image/jpeg"
+        style={{ display: 'none' }}
+        id="raised-button-file"
+        multiple
+        type="file"
+        onChange={async (event) => {
+          const elem = event.target as HTMLInputElement
+          if (elem && elem.files) {
+            const files = Array.from(elem.files)
+            setCompressing(true)
+            setImages(await compress(files))
+            setCompressing(false)
+          }
+        }} />
       <Box mt={10}>
         <Backdrop sx={{ backgroundColor: '#ffffffee', zIndex: (theme) => theme.zIndex.drawer + 1 }} open={compressing || status === 'loading'}>
           {(compressing || status === 'loading') && <CircularProgress />}
