@@ -66,22 +66,22 @@ const updateGalleryMeta = (ghUser: string, accessToken: string, repoName: string
     let updatedCount = 0
     const updatedGallery = new Array<any>()
     gallery.forEach((album, index) => {
-      if (album.uri === uri) {
+      if (album.uri === uri) { // Existing album, add more photos
         updatedCount = (Number(album.count) + Number(count))
         updatedGallery.push({ ...album, ...(cover.length > 0 && { cover }), name, count: updatedCount })
-      } else {
         updatedExisting = true
+      } else {  // Leave the rest of albums, as is
         updatedGallery.push(album)
       }
     })
-    if (!updatedExisting) {
+    if (!updatedExisting) { // New album, so insert new entry
       updatedGallery.push({ cover, name, count, uri })
     }
 
     const { data: { sha } } = await octokit.request(`GET /repos/${ghUser}/${DEFAULT_GALLERY_REPO}/contents/meta/gallery.json`);
     const galleryGhInfo = await octokit.request(`PUT /repos/${ghUser}/${DEFAULT_GALLERY_REPO}/contents/meta/gallery.json`, {
       message: updatedExisting ? `Updated ${repoName} count to ${updatedCount}` : `Adding ${repoName} to gallery.json`,
-      content: btoa(JSON.stringify(updatedGallery)),
+      content: btoa(JSON.stringify(updatedGallery, null, 2)),
       sha,
     })
     response = { ...response, galleryGhInfo }
