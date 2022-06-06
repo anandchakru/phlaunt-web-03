@@ -1,13 +1,13 @@
 {
   "files": {
     "main.css": "/phlaunt-web-03/static/css/main.964fdded.css",
-    "main.js": "/phlaunt-web-03/static/js/main.dfa178ec.js",
+    "main.js": "/phlaunt-web-03/static/js/main.ad430b6a.js",
     "index.html": "/phlaunt-web-03/index.html",
     "main.964fdded.css.map": "/phlaunt-web-03/static/css/main.964fdded.css.map",
-    "main.dfa178ec.js.map": "/phlaunt-web-03/static/js/main.dfa178ec.js.map"
+    "main.ad430b6a.js.map": "/phlaunt-web-03/static/js/main.ad430b6a.js.map"
   },
   "entrypoints": [
     "static/css/main.964fdded.css",
-    "static/js/main.dfa178ec.js"
+    "static/js/main.ad430b6a.js"
   ]
 }
