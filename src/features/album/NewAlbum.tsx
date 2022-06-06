@@ -8,14 +8,18 @@ import { useNavigate } from 'react-router-dom'
 
 
 function NewAlbum() {
-  const genNewAlbumName = (len: number = 5, charSet: string = 'bcdfghjkmnpqrstvwxyzBCDFGHJKMNPQRSTVWXYZ0123456789') => {
+  const genNewAlbumName = (len: number = 5, charSet: string = 'bcdfghjkmnpqrstvwxyzBCDFGHJKMNPQRSTVWXYZ') => {
     // https://stackoverflow.com/a/19964557/234110
     const charlen = charSet.length
     return Array.apply(null, Array(len)).map(() => charSet.charAt(Math.floor(Math.random() * charlen))).join('')
   }
   const genRepoName = () => {
     const dt = new Date()
-    return `pk-${dt.getFullYear()}${("0" + (dt.getMonth() + 1)).slice(-2)}${("0" + dt.getDate()).slice(-2)}${albumName.toLocaleLowerCase().replace(/[^a-z0-9]+/g, '_')}`
+    if (/^\d/.test(albumName)) { // https://stackoverflow.com/a/39736204/234110
+      return `pk-${albumName.toLocaleLowerCase()}`
+    } else {
+      return `pk-${dt.getFullYear()}${("0" + (dt.getMonth() + 1)).slice(-2)}${("0" + dt.getDate()).slice(-2)}${albumName.toLocaleLowerCase().replace(/[^a-z0-9]+/g, '_')}`
+    }
   }
 
   const navigate = useNavigate()
@@ -28,7 +32,7 @@ function NewAlbum() {
   return (
     <>
       <Box mb={10}>
-        <TextField fullWidth id="standard-basic" variant="standard" defaultValue={albumName} onChange={(e) => {
+        <TextField fullWidth id="standard-basic" variant="standard" defaultValue={albumName} inputProps={{ maxLength: 80 }} onChange={(e) => {
           setAlbumName(e.target.value)
         }} onFocus={event => event.target.select()} />
       </Box>
