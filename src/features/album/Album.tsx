@@ -111,9 +111,8 @@ function Album() {
             onClick={() => window.open(albumGhPageImages?.repoInfo.data?.owner.html_url)}>
             <Avatar sx={{ width: '24px', height: '24px' }} alt={albumGhPageImages?.repoInfo.data?.owner.html_url} src={albumGhPageImages?.repoInfo.data?.owner.avatar_url} />
           </IconButton> :
-            <IconButton aria-label="share" disabled color="primary" onClick={() => window.open(window.location.href.replace('album/', 'album/' + ghUser + '/'))}>
+            <IconButton aria-label="share" disabled={!albumGhPageImages?.repoInfo.data?.homepage} color="primary" onClick={() => window.open(albumGhPageImages?.repoInfo.data?.homepage)}>
               <ShareIcon />
-              {/* Disabled for now, once copy to clipboard is figured out, will enable it */}
             </IconButton>}
           {images && albumId && Object.keys(images).length > 0 ?
             <IconButton aria-label="View on Github" color="primary" onClick={async () => {
