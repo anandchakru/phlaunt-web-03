@@ -1,6 +1,6 @@
 import { Typography } from "@mui/material"
 import { useAppSelector } from "../../app/hooks"
-import { AppUser, selectAuthUser } from "../auth/AuthSlice"
+import { selectAuthUser } from "../auth/AuthSlice"
 
 const Profile = () => {
   const authUser = useAppSelector(selectAuthUser)
