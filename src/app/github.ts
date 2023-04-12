@@ -196,7 +196,7 @@ const createAlbumWithImages = (ghUser: string, accessToken: string, repoName: st
     // Add images
     const keys = images ? Object.keys(images) : []
     if (keys.length > 0) {
-      const readme = `# ${repoName}\n${albumName}\n\n${keys.map(key => `![${images[key].name.replace(/\..*/, '')}](public/img/${images[key].name})`).join('\n\n')}}`
+      const readme = `# ${repoName}\n${albumName}\n\n${keys.map(key => `![${images[key].name.replace(/\..*/, '')}](public/img/${images[key].name})`).join('\n\n')}`
       const pullReqGhInfo = await octokit.createPullRequest({
         owner: ghUser,
         repo: repoName,
