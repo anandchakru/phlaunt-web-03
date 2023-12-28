@@ -64,7 +64,8 @@ function NewAlbum() {
           </Button>
         </label>
         {images && Object.keys(images).length > 0 && <Button sx={{}} variant="contained" color="primary" onClick={async () => {
-          await dispatch(createAlbumAsync({ repoName: genRepoName(), albumName, images }))
+          const albumNameTrimmed = albumName.replace(/\s/g, '_')
+          await dispatch(createAlbumAsync({ repoName: genRepoName(), albumName: albumNameTrimmed, images }))
           setImages({})
           alert('Album created, it will take about a minute to see changes.')
           navigate('/gallery')

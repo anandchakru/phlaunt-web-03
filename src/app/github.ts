@@ -190,7 +190,7 @@ const createAlbumWithImages = (ghUser: string, accessToken: string, repoName: st
       description: albumName,
       homepage: `https://${ghUser}.github.io/${repoName}/`,
     })
-    await waitFor(500)
+    await waitFor(2500)
     response = { ...response, albumGhInfo }
 
     // Add images

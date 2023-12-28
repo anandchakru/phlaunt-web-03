@@ -10,7 +10,7 @@ import Album from './features/album/Album'
 import Container from '@mui/material/Container'
 import ProtectedRoute from './features/auth/ProtectedRoute'
 import Login from './features/auth/Login'
-import './App.scss'
+import './App.css'
 import { useAppDispatch, useAppSelector } from './app/hooks'
 import { authInitAsync, authStateChange, setAuthCredentials, fireauth, selectAuthCredential, selectAuthInitStatus, AUTH_CREDENTIAL, AppCredential, selectAuthUser } from './features/auth/AuthSlice'
 import { onAuthStateChanged } from "firebase/auth"
